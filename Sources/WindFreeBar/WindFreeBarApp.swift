@@ -30,7 +30,7 @@ struct MenuBarLabel: View {
     let loaded: Bool
 
     var body: some View {
-        let icon = state.power ? Labels.modeIcon(state.mode) : "air.conditioner.horizontal"
+        let icon = state.power ? Labels.modeIcon(state.mode) : "air.conditioner.horizontal.fill"
         if loaded, state.power {
             Label("\(state.setpoint)°", systemImage: icon)
                 .labelStyle(.titleAndIcon)
