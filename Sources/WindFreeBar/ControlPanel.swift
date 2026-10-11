@@ -221,7 +221,7 @@ struct SettingsView: View {
                         .keyboardShortcut(.defaultAction)
                 }
             } else {
-                step("1", "Dados do app OAuth criado na SmartThings CLI")
+                step("1", "Client ID e Client Secret do app OAuth da SmartThings")
                 TextField("Client ID", text: $clientId)
                     .textFieldStyle(.roundedBorder)
                 SecureField("Client Secret", text: clientSecret)
