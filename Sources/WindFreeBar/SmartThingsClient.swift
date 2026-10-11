@@ -1,0 +1,97 @@
+import Foundation
+
+enum SmartThingsError: LocalizedError {
+    case unauthorized
+    case sessionExpired
+    case forbidden
+    case oauthRejected(String)
+    case noAirConditioner
+    case unexpectedResponse
+    case http(Int, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unauthorized: return "Não conectado à SmartThings. Conecte nas configurações."
+        case .sessionExpired: return "A autorização expirou. Conecte de novo nas configurações."
+        case .forbidden: return "Sem permissão. Confira se o app OAuth tem os escopos r, w e x de devices."
+        case .oauthRejected(let body): return "A SmartThings recusou a autorização: \(body.prefix(160))"
+        case .noAirConditioner: return "Nenhum ar-condicionado encontrado na conta SmartThings."
+        case .unexpectedResponse: return "Resposta inesperada da SmartThings."
+        case .http(let code, let body): return "Erro \(code) da SmartThings: \(body.prefix(160))"
+        }
+    }
+
+    var needsReauthorization: Bool {
+        switch self {
+        case .unauthorized, .sessionExpired: return true
+        default: return false
+        }
+    }
+}
+
+/// Cliente mínimo da API REST da SmartThings (https://api.smartthings.com/v1).
+struct SmartThingsClient {
+    let auth: AuthManager
+    private let base = "https://api.smartthings.com/v1"
+
+    private func request(_ path: String, method: String = "GET", body: Data? = nil,
+                         retryOnUnauthorized: Bool = true) async throws -> Data {
+        let token = try await auth.accessToken()
+        var req = URLRequest(url: URL(string: base + path)!)
+        req.httpMethod = method
+        req.timeoutInterval = 15
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let body {
+            req.httpBody = body
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        let (data, response) = try await URLSession.shared.data(for: req)
+        guard let http = response as? HTTPURLResponse else { throw SmartThingsError.unexpectedResponse }
+        switch http.statusCode {
+        case 200..<300:
+            return data
+        case 401:
+            // Token recusado antes da hora: renova uma vez e tenta de novo.
+            guard retryOnUnauthorized else { throw SmartThingsError.unauthorized }
+            try await auth.refresh()
+            return try await request(path, method: method, body: body, retryOnUnauthorized: false)
+        case 403:
+            throw SmartThingsError.forbidden
+        default:
+            throw SmartThingsError.http(http.statusCode, String(data: data, encoding: .utf8) ?? "")
+        }
+    }
+
+    /// Procura o primeiro dispositivo que tenha a capability airConditionerMode.
+    func findAirConditioner() async throws -> (id: String, label: String) {
+        let data = try await request("/devices")
+        guard
+            let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let items = root["items"] as? [[String: Any]]
+        else { throw SmartThingsError.unexpectedResponse }
+
+        for item in items {
+            let components = item["components"] as? [[String: Any]] ?? []
+            let capabilities = components
+                .flatMap { $0["capabilities"] as? [[String: Any]] ?? [] }
+                .compactMap { $0["id"] as? String }
+            if capabilities.contains("airConditionerMode"), let id = item["deviceId"] as? String {
+                let label = (item["label"] as? String) ?? (item["name"] as? String) ?? "Ar-condicionado"
+                return (id, label)
+            }
+        }
+        throw SmartThingsError.noAirConditioner
+    }
+
+    func status(deviceId: String) async throws -> ACState {
+        try ACState.parse(try await request("/devices/\(deviceId)/status"))
+    }
+
+    /// POST /devices/{id}/commands — um comando no componente "main".
+    func send(deviceId: String, capability: String, command: String, arguments: [Any] = []) async throws {
+        var cmd: [String: Any] = ["component": "main", "capability": capability, "command": command]
+        if !arguments.isEmpty { cmd["arguments"] = arguments }
+        let body = try JSONSerialization.data(withJSONObject: ["commands": [cmd]])
+        _ = try await request("/devices/\(deviceId)/commands", method: "POST", body: body)
+    }
+}
