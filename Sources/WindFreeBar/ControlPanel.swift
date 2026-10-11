@@ -161,6 +161,13 @@ struct ControlPanel: View {
     // MARK: Rodapé
 
     private var footer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LaunchAtLoginToggle()
+            footerButtons
+        }
+    }
+
+    private var footerButtons: some View {
         HStack(spacing: 14) {
             Button { Task { await ac.refresh(askDevice: true) } } label: { Image(systemName: "arrow.clockwise") }
                 .help("Atualizar")
@@ -264,5 +271,45 @@ struct SettingsView: View {
             working = false
             if ac.isConnected { code = ""; ac.draftClientSecret = "" }
         }
+    }
+}
+
+struct LaunchAtLoginToggle: View {
+    @State private var enabled = LaunchAtLogin.isEnabled
+    @State private var needsApproval = LaunchAtLogin.needsApproval
+    @State private var error: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { enabled }, set: update))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .font(.caption)
+            if needsApproval {
+                Button("Aprovar em Itens de Início") { LaunchAtLogin.openLoginItemsSettings() }
+                    .buttonStyle(.link)
+                    .font(.caption)
+            }
+            if let error {
+                Text(error).font(.caption2).foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onAppear(perform: sync)
+    }
+
+    private func update(_ value: Bool) {
+        do {
+            try LaunchAtLogin.set(value)
+            error = nil
+        } catch {
+            self.error = "Não foi possível alterar: \(error.localizedDescription). O app precisa estar em /Applications."
+        }
+        sync()
+    }
+
+    private func sync() {
+        enabled = LaunchAtLogin.isEnabled
+        needsApproval = LaunchAtLogin.needsApproval
     }
 }

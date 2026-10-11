@@ -10,13 +10,13 @@ Requer as Command Line Tools do Xcode (`xcode-select --install`) ou o Xcode.
 ```bash
 cd WindFreeBar
 chmod +x build.sh
-./build.sh                       # gera build/WindFree.app
-open build/WindFree.app
+./build.sh --install             # compila, instala em /Applications e abre
 ```
 
 Para testar sem empacotar: `swift run`. Para editar no Xcode: `open Package.swift`.
 
-Na primeira vez o painel pede para conectar à SmartThings via OAuth (veja abaixo). O app encontra o ar sozinho e atualiza o estado a cada 60 s.
+Para abrir junto com o Mac, ligue "Abrir ao iniciar o Mac" no rodapé do painel (o app precisa estar
+em /Applications). Na primeira vez o painel pede para conectar à SmartThings via OAuth (veja abaixo). O app encontra o ar sozinho e atualiza o estado a cada 60 s.
 
 ## Mapeamento da API (perfil DA-AC-RAC-01001)
 
@@ -85,4 +85,5 @@ Nunca faça commit de tokens ou do Client Secret: eles ficam só no Keychain.
 - `ACController.swift` — estado observável, atualização otimista, polling, debounce da temperatura
 - `ControlPanel.swift` — interface do painel e tela de conexão
 - `Keychain.swift` — armazenamento das credenciais
+- `LaunchAtLogin.swift` — abertura automática no login (SMAppService)
 - `WindFreeBarApp.swift` — entrada do app e ícone da barra de menus
