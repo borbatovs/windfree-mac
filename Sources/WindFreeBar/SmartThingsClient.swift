@@ -76,11 +76,22 @@ struct SmartThingsClient {
                 .flatMap { $0["capabilities"] as? [[String: Any]] ?? [] }
                 .compactMap { $0["id"] as? String }
             if capabilities.contains("airConditionerMode"), let id = item["deviceId"] as? String {
-                let label = (item["label"] as? String) ?? (item["name"] as? String) ?? "Ar-condicionado"
-                return (id, label)
+                return (id, Self.label(of: item))
             }
         }
         throw SmartThingsError.noAirConditioner
+    }
+
+    /// Nome atual do aparelho (muda quando o usuário renomeia no app SmartThings).
+    func label(deviceId: String) async throws -> String {
+        let data = try await request("/devices/\(deviceId)")
+        guard let item = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { throw SmartThingsError.unexpectedResponse }
+        return Self.label(of: item)
+    }
+
+    private static func label(of item: [String: Any]) -> String {
+        (item["label"] as? String) ?? (item["name"] as? String) ?? "Ar-condicionado"
     }
 
     func status(deviceId: String) async throws -> ACState {

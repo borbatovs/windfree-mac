@@ -89,12 +89,12 @@ final class ACController: ObservableObject {
             if deviceId == nil {
                 let found = try await client.findAirConditioner()
                 deviceId = found.id
-                deviceLabel = found.label
-                UserDefaults.standard.set(found.label, forKey: "deviceLabel")
+                setLabel(found.label)
             }
             guard let deviceId else { return }
 
             if askDevice {
+                if let label = try? await client.label(deviceId: deviceId) { setLabel(label) }
                 try? await client.send(deviceId: deviceId, capability: "refresh", command: "refresh")
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
             }
@@ -106,6 +106,12 @@ final class ACController: ObservableObject {
         } catch {
             handle(error)
         }
+    }
+
+    private func setLabel(_ label: String) {
+        guard label != deviceLabel else { return }
+        deviceLabel = label
+        UserDefaults.standard.set(label, forKey: "deviceLabel")
     }
 
     /// Combina o estado vindo da nuvem com os comandos ainda não confirmados.
