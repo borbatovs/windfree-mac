@@ -161,13 +161,6 @@ struct ControlPanel: View {
     // MARK: Rodapé
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LaunchAtLoginToggle()
-            footerButtons
-        }
-    }
-
-    private var footerButtons: some View {
         HStack(spacing: 14) {
             Button { Task { await ac.refresh(askDevice: true) } } label: { Image(systemName: "arrow.clockwise") }
                 .help("Atualizar")
@@ -207,19 +200,33 @@ struct SettingsView: View {
     @State private var working = false
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            connection
+            Divider()
+            VStack(alignment: .leading, spacing: 10) {
+                sectionTitle("Inicialização")
+                LaunchAtLoginToggle()
+            }
+            if ac.isConnected {
+                HStack {
+                    Spacer()
+                    Button("Fechar") { ac.showSettings = false }
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+        }
+        .onAppear { if clientId.isEmpty { clientId = ac.savedClientId } }
+    }
+
+    private var connection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Conexão com a SmartThings").font(.subheadline.weight(.semibold))
+            sectionTitle("Conexão com a SmartThings")
 
             if ac.isConnected {
                 Label("Conectado. O acesso é renovado automaticamente.", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(.green)
-                HStack {
-                    Button("Desconectar", role: .destructive) { ac.disconnect() }
-                    Spacer()
-                    Button("Fechar") { ac.showSettings = false }
-                        .keyboardShortcut(.defaultAction)
-                }
+                Button("Desconectar", role: .destructive) { ac.disconnect() }
             } else {
                 step("1", "Client ID e Client Secret do app OAuth da SmartThings")
                 TextField("Client ID", text: $clientId)
@@ -247,7 +254,10 @@ struct SettingsView: View {
                 }
             }
         }
-        .onAppear { if clientId.isEmpty { clientId = ac.savedClientId } }
+    }
+
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text).font(.subheadline.weight(.semibold))
     }
 
     private func step(_ number: String, _ text: String) -> some View {
