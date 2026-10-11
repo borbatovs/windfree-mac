@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "WindFree: compilar e instalar",
+      "type": "shell",
+      "command": "./build.sh --install",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$swiftc"],
+      "presentation": { "reveal": "always", "clear": true }
+    },
+    {
+      "label": "WindFree: só compilar",
+      "type": "shell",
+      "command": "swift build",
+      "group": "build",
+      "problemMatcher": ["$swiftc"],
+      "presentation": { "reveal": "always", "clear": true }
+    },
+    {
+      "label": "WindFree: rodar sem instalar",
+      "type": "shell",
+      "command": "pkill -x WindFreeBar; swift run",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "clear": true }
+    }
+  ]
+}

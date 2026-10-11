@@ -15,6 +15,12 @@ chmod +x build.sh
 
 Para testar sem empacotar: `swift run`. Para editar no Xcode: `open Package.swift`.
 
+### VS Code
+
+Abra a pasta do projeto no VS Code e instale as extensões recomendadas (Swift e Claude Code).
+`Cmd+Shift+B` compila, instala em /Applications e abre o app. Outras tarefas em
+*Terminal › Run Task…*: "só compilar" (mostra erros no painel Problems) e "rodar sem instalar".
+
 Para abrir junto com o Mac, ligue "Abrir ao iniciar o Mac" no rodapé do painel (o app precisa estar
 em /Applications). Na primeira vez o painel pede para conectar à SmartThings via OAuth (veja abaixo). O app encontra o ar sozinho e atualiza o estado a cada 60 s.
 
