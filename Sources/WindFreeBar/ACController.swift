@@ -171,6 +171,14 @@ final class ACController: ObservableObject {
         send("custom.airConditionerOptionalMode", "setAcOptionalMode", [value]) { $0.optionalMode = value }
     }
 
+    func setWindFree(_ on: Bool) {
+        setOptionalMode(ACState.optionalMode(windFree: on, sleep: state.isSleep))
+    }
+
+    func setSleep(_ on: Bool) {
+        setOptionalMode(ACState.optionalMode(windFree: state.isWindFree, sleep: on))
+    }
+
     func setAutoClean(_ on: Bool) {
         send("custom.autoCleaningMode", "setAutoCleaningMode", [on ? "on" : "off"]) { $0.autoClean = on }
     }

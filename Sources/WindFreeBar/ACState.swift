@@ -20,6 +20,17 @@ struct ACState: Equatable {
     var humidity: Double?
 
     var isWindFree: Bool { optionalMode == "windFree" || optionalMode == "windFreeSleep" }
+    var isSleep: Bool { optionalMode == "sleep" || optionalMode == "windFreeSleep" }
+
+    /// Sono e WindFree dividem o mesmo atributo (`acOptionalMode`); os dois juntos são `windFreeSleep`.
+    static func optionalMode(windFree: Bool, sleep: Bool) -> String {
+        switch (windFree, sleep) {
+        case (true, true): return "windFreeSleep"
+        case (true, false): return "windFree"
+        case (false, true): return "sleep"
+        case (false, false): return "off"
+        }
+    }
 
     /// Estado de exemplo para a pré-visualização.
     static var demo: ACState {

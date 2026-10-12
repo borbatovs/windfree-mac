@@ -12,9 +12,9 @@ struct ControlPanel: View {
                                width: 288 * 0.9)
                     .frame(maxWidth: .infinity)
             }
-            Divider()
 
             if ac.showSettings {
+                Divider()
                 SettingsView()
             } else {
                 controls
@@ -81,114 +81,77 @@ struct ControlPanel: View {
             setpoint
             modes
 
-            VStack(alignment: .leading, spacing: 8) {
-                sectionTitle("Velocidade")
-                Picker("", selection: Binding(get: { ac.state.fanMode }, set: { ac.setFan($0) })) {
-                    ForEach(ac.state.supportedFanModes, id: \.self) { Text(Labels.fan($0)).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-
-            windFreeToggle
-
-            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 12) {
-                GridRow {
-                    sectionTitle("Direção")
-                    Picker("", selection: Binding(get: { ac.state.oscillation }, set: { ac.setOscillation($0) })) {
-                        ForEach(ac.state.supportedOscillation, id: \.self) { Text(Labels.oscillation($0)).tag($0) }
-                    }
-                    .labelsHidden()
-                }
-                GridRow {
-                    sectionTitle("Modo especial")
-                    Picker("", selection: Binding(get: { ac.state.optionalMode }, set: { ac.setOptionalMode($0) })) {
-                        ForEach(ac.state.supportedOptionalModes, id: \.self) { Text(Labels.optional($0)).tag($0) }
-                    }
-                    .labelsHidden()
-                }
-                GridRow {
-                    sectionTitle("Auto limpeza")
-                    Toggle("", isOn: Binding(get: { ac.state.autoClean }, set: { ac.setAutoClean($0) }))
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .labelsHidden()
-                }
-            }
+            selectors
         }
         .disabled(!ac.hasLoaded)
     }
 
     private var setpoint: some View {
-        HStack {
-            stepButton("minus") { ac.stepSetpoint(-1) }
-                .disabled(ac.state.setpoint <= ac.state.setpointMin)
-            Spacer()
-            Text("\(ac.state.setpoint)°")
-                .font(.system(size: 44, weight: .light, design: .rounded))
-                .monospacedDigit()
-            Spacer()
-            stepButton("plus") { ac.stepSetpoint(1) }
-                .disabled(ac.state.setpoint >= ac.state.setpointMax)
-        }
+        TemperatureDial(value: ac.state.setpoint,
+                        range: ac.state.setpointMin...max(ac.state.setpointMin, ac.state.setpointMax),
+                        mode: ac.state.mode,
+                        power: ac.state.power) { ac.stepSetpoint($0) }
     }
 
     private var modes: some View {
         HStack(spacing: 6) {
             ForEach(ac.state.supportedModes, id: \.self) { mode in
                 let selected = ac.state.mode == mode
+                let tint = ModeColor.of(mode)
                 Button { ac.setMode(mode) } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: Labels.modeIcon(mode)).font(.system(size: 15))
-                        Text(Labels.mode(mode)).font(.caption2)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                    Image(systemName: Labels.modeIcon(mode))
+                        .font(.system(size: 17))
+                        .frame(maxWidth: .infinity, minHeight: 40)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(selected ? Color.accentColor.opacity(0.22) : Color.primary.opacity(0.05))
+                            .fill(selected ? tint.opacity(0.22) : Color.primary.opacity(0.05))
                     )
-                    .foregroundStyle(selected ? Color.accentColor : Color.primary)
+                    .foregroundStyle(selected ? tint : Color.primary)
                 }
                 .buttonStyle(.hover(cornerRadius: 8))
+                .help(Labels.mode(mode))
+                .accessibilityLabel(Labels.mode(mode))
             }
         }
     }
 
-    private var windFreeToggle: some View {
-        Button {
-            ac.setOptionalMode(ac.state.isWindFree ? "off" : "windFree")
-        } label: {
-            HStack {
-                Image(systemName: "wind.circle")
-                Text("WindFree")
-                Spacer()
-                Text(ac.state.isWindFree ? "Ligado" : "Desligado")
-                    .foregroundStyle(.secondary)
+    private var selectors: some View {
+        let st = ac.state
+        let onOff = ["Desligado", "Ligado"]
+        return HStack(spacing: 8) {
+            SelectorTile(icon: "fan", title: "Velocidade", value: Labels.fan(st.fanMode)) {
+                st.supportedFanModes.map { fan in .init(title: Labels.fan(fan), selected: fan == st.fanMode) { ac.setFan(fan) } }
             }
-            .padding(.horizontal, 10)
-            .frame(height: 32)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(ac.state.isWindFree ? Color.accentColor.opacity(0.22) : Color.primary.opacity(0.05))
-            )
+            SelectorTile(icon: "moon.zzz", title: "Sono", value: onOff[st.isSleep ? 1 : 0], active: st.isSleep) {
+                [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isSleep) { ac.setSleep(on) } }
+            }
+            .disabled(!st.supportedOptionalModes.contains("sleep"))
+            SelectorTile(icon: "arrow.up.and.down.and.arrow.left.and.right", iconSize: 15, title: "Direção",
+                         value: Labels.oscillation(st.oscillation)) {
+                st.supportedOscillation.map { o in .init(title: Labels.oscillation(o), selected: o == st.oscillation) { ac.setOscillation(o) } }
+            }
+            SelectorTile(icon: "fan.slash", title: "WindFree", value: onOff[st.isWindFree ? 1 : 0], active: st.isWindFree) {
+                [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isWindFree) { ac.setWindFree(on) } }
+            }
+            .disabled(!st.supportedOptionalModes.contains("windFree"))
         }
-        .buttonStyle(.hover(cornerRadius: 8))
-        .disabled(!ac.state.supportedOptionalModes.contains("windFree"))
     }
 
     // MARK: Rodapé
 
     private var footer: some View {
         HStack(spacing: 4) {
-            Button { Task { await ac.refresh(askDevice: true) } } label: { footerIcon("arrow.clockwise") }
-                .help("Atualizar")
-            Button { ac.showSettings.toggle() } label: { footerIcon("gearshape") }
-                .help("Configurações")
+            if !ac.showSettings {
+                Button { ac.showSettings = true } label: { footerIcon("gearshape") }
+                    .help("Configurações")
+            } else if ac.isConnected {
+                // Sem conexão não há para onde voltar: o painel ficaria vazio.
+                Button { ac.showSettings = false } label: { footerIcon("chevron.left") }
+                    .help("Voltar")
+                    .keyboardShortcut(.cancelAction)
+            }
             if ac.isBusy { ProgressView().controlSize(.small).padding(.leading, 4) }
             Spacer()
-            Button { NSApp.terminate(nil) } label: {
-                Text("Sair").padding(.horizontal, 8).frame(height: 26)
-            }
         }
         .buttonStyle(.hover(cornerRadius: 6))
         .padding(.horizontal, -6)   // alinha os ícones com a margem, já que o hover tem folga
@@ -196,22 +159,6 @@ struct ControlPanel: View {
 
     private func footerIcon(_ symbol: String) -> some View {
         Image(systemName: symbol).frame(width: 26, height: 26)
-    }
-
-    // MARK: Helpers
-
-    private func sectionTitle(_ text: String) -> some View {
-        Text(text).font(.caption).foregroundStyle(.secondary)
-    }
-
-    private func stepButton(_ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .semibold))
-                .frame(width: 40, height: 40)
-                .background(Circle().fill(Color.primary.opacity(0.07)))
-        }
-        .buttonStyle(.hoverCircle)
     }
 }
 
@@ -223,23 +170,28 @@ struct SettingsView: View {
     @State private var code = ""
     private var clientSecret: Binding<String> { $ac.draftClientSecret }
     @State private var working = false
+    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             connection
             Divider()
             VStack(alignment: .leading, spacing: 10) {
+                sectionTitle("Aparência")
+                Picker("", selection: $appearance) {
+                    ForEach(AppAppearance.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .onChange(of: appearance) { $0.apply() }
+            Divider()
+            VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("Inicialização")
                 LaunchAtLoginToggle()
                     .disabled(ac.isDemo)   // registraria o executável de desenvolvimento no login
             }
-            if ac.isConnected {
-                HStack {
-                    Spacer()
-                    Button("Fechar") { ac.showSettings = false }
-                        .keyboardShortcut(.defaultAction)
-                }
-            }
+            Button("Sair do WindFree") { NSApp.terminate(nil) }
         }
         .onAppear { if clientId.isEmpty { clientId = ac.savedClientId } }
     }
@@ -252,8 +204,12 @@ struct SettingsView: View {
                 Label("Conectado. O acesso é renovado automaticamente.", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(.green)
-                Button("Desconectar", role: .destructive) { ac.disconnect() }
-                    .disabled(ac.isDemo)
+                HStack {
+                    Button("Atualizar agora") { Task { await ac.refresh(askDevice: true) } }
+                        .help("Pede ao aparelho o estado atual")
+                    Button("Desconectar", role: .destructive) { ac.disconnect() }
+                        .disabled(ac.isDemo)
+                }
             } else {
                 step("1", "Client ID e Client Secret do app OAuth da SmartThings")
                 TextField("Client ID", text: $clientId)

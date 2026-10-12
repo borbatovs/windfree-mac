@@ -53,7 +53,7 @@ struct ACIllustration: View {
                 .id(power)
                 .transition(.opacity)
             if power {
-                AirFlowView(fanMode: fanMode, heat: mode == "heat")
+                AirFlowView(fanMode: fanMode, mode: mode)
                     .frame(width: Self.airFlowSize.width * s, height: Self.airFlowSize.height * s)
                     .offset(x: photoLeft - Self.photoX * s, y: Self.airFlowY * s)
                     .transition(.opacity)
@@ -91,16 +91,27 @@ struct ACIllustration: View {
 /// mais rápido conforme a velocidade do ventilador.
 struct AirFlowView: View {
     let fanMode: String
-    let heat: Bool
+    let mode: String
 
     /// O painel do menu bar continua existindo fechado; só anima enquanto está na tela.
     @State private var visible = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private static let cycle = 1.4         // a cabeça vai de 0 a 1,4 (o trecho sai inteiro do fio)
     private static let segment = 0.4
 
-    private static let blue = ["#1F91E8", "#2BADFA", "#33C4FF", "#21A3E8", "#52B8F5"].map(Color.init(hex:))
-    private static let orange = ["#E8731F", "#FA8C2B", "#FFA333", "#E8851F", "#F5A052"].map(Color.init(hex:))
+    /// 5 tons por modo, um para cada `AirFlowStrand.tone`. Frio usa os azuis do Figma; Quente, laranjas
+    /// escolhidos por nós; os demais variam a cor do modo (`ModeColor`) para o branco e o preto.
+    private static func palette(for mode: String, dark: Bool) -> [Color] {
+        switch mode {
+        case "cool": return ["#1F91E8", "#2BADFA", "#33C4FF", "#21A3E8", "#52B8F5"].map(Color.init(hex:))
+        case "heat": return ["#E8731F", "#FA8C2B", "#FFA333", "#E8851F", "#F5A052"].map(Color.init(hex:))
+        default:
+            let base = NSColor(hex: ModeColor.hex(mode, dark: dark))
+            let variants: [(NSColor, CGFloat)] = [(.black, 0.10), (.white, 0.10), (.white, 0.22), (.black, 0.04), (.white, 0.32)]
+            return variants.map { Color(nsColor: base.blended(withFraction: $0.1, of: $0.0) ?? base) }
+        }
+    }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: !visible)) { timeline in
@@ -109,7 +120,7 @@ struct AirFlowView: View {
                 let scale = size.width / 980
                 context.scaleBy(x: scale, y: scale)
                 let travelled = distance(at: t)
-                let palette = heat ? Self.orange : Self.blue
+                let palette = Self.palette(for: mode, dark: colorScheme == .dark)
 
                 for strand in AirFlowStrand.all {
                     let head = (strand.phase + travelled).truncatingRemainder(dividingBy: Self.cycle)
@@ -166,7 +177,16 @@ struct AirFlowView: View {
     }
 }
 
-private extension Color {
+extension NSColor {
+    convenience init(hex: String) {
+        let v = UInt32(hex.dropFirst(), radix: 16) ?? 0
+        self.init(srgbRed: CGFloat((v >> 16) & 0xFF) / 255,
+                  green: CGFloat((v >> 8) & 0xFF) / 255,
+                  blue: CGFloat(v & 0xFF) / 255, alpha: 1)
+    }
+}
+
+extension Color {
     init(hex: String) {
         let v = UInt32(hex.dropFirst(), radix: 16) ?? 0
         self.init(red: Double((v >> 16) & 0xFF) / 255,

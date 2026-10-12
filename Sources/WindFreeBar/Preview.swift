@@ -20,24 +20,31 @@ final class PreviewAppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Rodado pelo Terminal, o processo não vira app "de frente" sozinho.
         NSApp.setActivationPolicy(.regular)
+        AppAppearance.saved.apply()
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
 
-/// `swift run WindFreeBar --snapshot <pasta>`: salva PNGs do painel em alguns estados (tema escuro).
+/// `swift run WindFreeBar --snapshot <pasta>`: salva PNGs do painel em alguns estados (temas escuro e claro).
 @MainActor
 enum Snapshots {
     static func render(to directory: String) {
         _ = NSApplication.shared
         NSApp.setActivationPolicy(.prohibited)
 
-        let cases: [(name: String, setup: (ACController) -> Void)] = [
-            ("ligado-frio", { _ in }),
-            ("ligado-quente", { $0.state.mode = "heat" }),
-            ("desligado", { $0.state.power = false }),
-            ("configuracoes", { $0.showSettings = true }),
+        let cases: [(name: String, dark: Bool, setup: (ACController) -> Void)] = [
+            ("ligado-frio", true, { _ in }),
+            ("ligado-quente", true, { $0.state.mode = "heat" }),
+            ("ligado-seco", true, { $0.state.mode = "dry" }),
+            ("ligado-ventilar", true, { $0.state.mode = "wind" }),
+            ("ligado-auto", true, { $0.state.mode = "auto" }),
+            ("desligado", true, { $0.state.power = false }),
+            ("configuracoes", true, { $0.showSettings = true }),
+            ("claro-ligado-frio", false, { _ in }),
+            ("claro-ligado-ventilar", false, { $0.state.mode = "wind" }),
+            ("claro-configuracoes", false, { $0.showSettings = true }),
         ]
         let folder = URL(fileURLWithPath: directory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -49,7 +56,7 @@ enum Snapshots {
                 .environmentObject(ac)
                 .background(Color(nsColor: .windowBackgroundColor)))
             let window = NSWindow(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: false)
-            window.appearance = NSAppearance(named: .darkAqua)
+            window.appearance = NSAppearance(named: item.dark ? .darkAqua : .aqua)
             window.contentView = view
             window.setContentSize(view.fittingSize)
             // Deixa o SwiftUI montar a tela (imagens, layout) antes de capturar.
