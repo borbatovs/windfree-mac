@@ -12,8 +12,12 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Ver a interface sem instalar: `swift run WindFreeBar --preview` (tarefa "WindFree: pré-visualizar painel").
   Abre o painel numa janela em modo de demonstração (`ACController(demo: true)`): dados de exemplo, sem rede,
   sem Keychain, comandos só mudam a tela. Prefira isso para ajustes visuais; instale só quando o dono pedir.
-- Conferir o layout você mesmo: `.build/debug/WindFreeBar --snapshot <pasta>` salva PNGs do painel (ligado frio,
-  ligado quente, desligado, configurações; tema escuro). Use a pasta de rascunho, não o repositório.
+- Conferir o layout você mesmo: `.build/debug/WindFreeBar --snapshot <pasta>` salva PNGs do painel (todos os
+  modos, extremos Frio 16° e Quente 30°, desligado, configurações; temas escuro e claro). Use a pasta de
+  rascunho, não o repositório. Animações não aparecem em PNG: para transições, capture quadros a cada ~0,1 s
+  numa janela fora da tela (foi assim que se achou o "deslizar" da ilustração) e depois remova o código.
+- Depois de ajustes visuais, abra a pré-visualização na tela do dono (`.build/debug/WindFreeBar --preview &`)
+  para ele testar interações (hover, rolagem, menus), que você não consegue testar.
 - Depois de mudar código, compile para confirmar antes de dizer que está pronto.
 - **Nunca** coloque tokens, Client ID/Secret ou códigos OAuth em arquivos do repositório. Ficam só no Keychain.
 
@@ -30,9 +34,12 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   - `custom.airConditionerOptionalMode.setAcOptionalMode` → off, sleep, quiet, smart, speed, windFree, windFreeSleep
   - `custom.autoCleaningMode.setAutoCleaningMode` → on, off
   - `refresh.refresh` → pede ao aparelho para reportar o estado
+- Sono e WindFree dividem `acOptionalMode`: a tela trata como dois seletores independentes e combina
+  (`ACState.optionalMode(windFree:sleep:)`; os dois juntos = `windFreeSleep`).
 - WindFree (`windFree`/`windFreeSleep`) é recusado no modo `heat` (testado no aparelho em 12/10/2026); o cartão
   fica desativado nesse modo. Nos demais modos ainda não foi testado um por um. Trocar para `heat` com
-  WindFree ligado é aceito: o próprio aparelho abre a aleta e desliga o WindFree (não é preciso desligar antes).
+  WindFree ligado é aceito: o próprio aparelho abre a aleta e desliga o WindFree (não é preciso desligar antes);
+  o `setMode` já mostra "Desligado" na hora para o WindFree simples (WindFree Sono espera a nuvem).
 - Leituras disponíveis: `temperatureMeasurement`, `relativeHumidityMeasurement`, `powerConsumptionReport`
   (energia acumulada em Wh), `custom.dustFilter` (uso do filtro em horas).
 - Desativadas neste modelo (`custom.disabledCapabilities`): sensores de qualidade do ar/poeira/odor,
@@ -56,6 +63,16 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   `NSHostingController.sizeThatFits(in: NSSize(width: 320, height: 0))`.
 - Mensagens de erro passam por `SmartThingsError.message(for:)`: o idioma do Mac do dono é `en-BR`, então
   `localizedDescription` de erros do sistema (rede, JSON, `SMAppService`) viria em inglês.
+- **`.animation(_:value:)` anima também a posição/tamanho da view**. Quando o painel muda de altura (ligar/
+  desligar), a janela salta para o tamanho final e qualquer view sob esse modificador desliza dentro dela. Não
+  anime a altura; anime só opacidade/cor por um `@State` próprio com `withAnimation` em `onChange`
+  (ver `ACIllustration.onPhotoOpacity`, `ModeGlow.shown`), inicializado em `onAppear`.
+- O SwiftUI do macOS 13 não entrega a roda do mouse: o dimmer usa uma `NSView` por cima (`DialInput`) para
+  rolagem, arraste e cursor.
+- `Menu` com label personalizado não é desenhado como view no macOS; os seletores usam `Button` + `NSMenu`
+  (`OptionMenu`).
+- Preferências do app instalado e do `--preview` ficam separadas (o executável do `swift run` não tem bundle id):
+  um tema escolhido na pré-visualização não vale no app.
 - Para conferir se um texto entrou no binário instalado, não confie em `strings`: textos de até 15 bytes UTF-8
   (ex.: "Inicialização") ficam embutidos nas instruções pelo Swift. Compare datas do binário com o fonte.
 
@@ -72,13 +89,20 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 
 ## Estrutura
 
-- `ACState.swift` — modelo do estado, parse do `/status`, rótulos e ícones em português
+- `ACState.swift` — modelo do estado, parse do `/status`, rótulos e ícones em português, combinação Sono/WindFree
 - `SmartThingsClient.swift` — HTTP: listar dispositivos, status, comandos
 - `AuthManager.swift` — fluxo OAuth e renovação
 - `ACController.swift` — estado observável, polling de 60 s, atualização otimista, `pending`, modo demonstração
-- `ControlPanel.swift` — painel (cabeçalho com botão liga/desliga, ilustração, controles), configurações em
-  duas seções (Conexão com a SmartThings, Inicialização)
+- `ControlPanel.swift` — painel: cabeçalho (nome, ambiente, botão de energia), ilustração, dimmer, botões de modo
+  (só ícone), 4 seletores (Velocidade, Sono, Direção, WindFree), rodapé com engrenagem; configurações em seções
+  (Conexão com "Atualizar agora"/"Desconectar", Aparência, Inicialização, "Sair do WindFree") e botão de voltar
+  com ícone no rodapé. Modo especial e Auto limpeza foram retirados da tela (o código de envio continua).
 - `ACIllustration.swift` — foto do aparelho e fluxo de ar animado no topo do painel
+- `TemperatureDial.swift` — dimmer de temperatura e `ModeColor` (cor de cada modo)
+- `SelectorTile.swift` — cartão de seleção com menu nativo (`OptionMenu`)
+- `ModeGlow.swift` — gradiente de fundo na cor do modo
+- `HoverButtonStyle.swift` — hover/clique dos botões personalizados
+- `AppAppearance.swift` — tema Sistema/Claro/Escuro (`NSApp.appearance`)
 - `AirFlowStrands.swift` — dados gerados dos 40 fios do fluxo de ar (não editar à mão; ver Figma abaixo)
 - `LaunchAtLogin.swift` — `SMAppService` (exige o app em /Applications)
 - `Preview.swift` — `--preview` (janela de pré-visualização) e `--snapshot` (capturas em PNG)
@@ -97,7 +121,26 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Animação: em cada fio um trecho de 40% do comprimento percorre o caminho em loop contínuo (o dono pediu loop;
   no Figma ela para depois de ~2 s). Velocidade em comprimentos/s: baixa 0,525, média 0,875, alta 1,4,
   turbo 2,1; auto oscila 0,63–0,87 a cada 8 s. Fase e opacidade de cada fio vêm do Figma.
-  Fios azuis (5 tons do Figma); laranja no modo Quente (tons escolhidos por nós, não estão no Figma).
+  Cor dos fios segue o modo (`ModeColor`): 5 variações da cor do modo; Quente usa laranjas escolhidos por nós.
+  Os azuis originais do Figma foram trocados pelo azul-gelo do Frio.
+- Ligar/desligar: a foto desligada fica sempre por baixo e a ligada só muda de opacidade (ease-in-out 0,4 s),
+  então só a aleta parece abrir; o fluxo entra 0,25 s depois. A altura muda na hora. Desligado há 16 pt a mais
+  abaixo da foto.
+
+## Visual
+
+- Cores dos modos (`ModeColor`, mudam com o tema): Frio azul-gelo `#8CD6F5` (claro: `#1E96CC`), Quente
+  `#FA8C2B`, Seco `#2EC4B6`, Ventilar branco `#FFFFFF` (claro: `#3A3A3C`), Auto `#8E7CF0`. Usadas no dimmer, no
+  botão do modo selecionado, nos fios de ar e no fundo.
+- Fundo (`ModeGlow`): gradiente do topo até ~metade, opacidade 8–45%. Frio mais intenso quanto mais baixa a
+  temperatura, Quente quanto mais alta, demais modos no meio-termo; desligado, sem cor. No fundo o Frio usa um
+  azul mais saturado (`#3FAEF5`), porque o gelo virava cinza.
+- Dimmer: arco de 240° com abertura embaixo, marcações a cada meio grau, sem números; sempre mostra um pedacinho
+  do arco no mínimo. Rolagem para cima sobe (1 grau por clique da roda, ~12 pt no trackpad, inércia ignorada) e
+  arraste vertical (8 pt por grau).
+- Botão de energia: ligado cheio na cor do texto (branco no escuro, preto no claro); o dono não quer o azul do
+  sistema nele. Desligado discreto, mas não pode parecer desativado quando ligado.
+- Botões personalizados têm hover (`HoverButtonStyle`); controles nativos seguem o padrão do macOS.
 - Para regerar `AirFlowStrands.swift`: `get_design_context` no nó 9:11825 dá caixa e SVG de cada fio (curva
   cúbica `M…C`; somar o deslocamento `inset` esquerdo/superior da caixa) e `get_motion_context` dá fase
   (`stroke-dashoffset`/`dasharray` em t = 0) e opacidade máxima.
