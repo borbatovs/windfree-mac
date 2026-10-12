@@ -87,7 +87,8 @@ struct TemperatureDial: View {
             }
             let style = StrokeStyle(lineWidth: 4, lineCap: .round)
             context.stroke(arc(to: 1), with: .color(Color.primary.opacity(0.08)), style: style)
-            if fraction > 0 { context.stroke(arc(to: fraction), with: .color(color), style: style) }
+            // No mínimo ainda mostra um pedacinho do arco, para o dimmer não parecer apagado.
+            context.stroke(arc(to: max(fraction, 0.03)), with: .color(color), style: style)
         }
     }
 

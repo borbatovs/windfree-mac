@@ -37,6 +37,8 @@ enum Snapshots {
         let cases: [(name: String, dark: Bool, setup: (ACController) -> Void)] = [
             ("ligado-frio", true, { _ in }),
             ("ligado-quente", true, { $0.state.mode = "heat" }),   // WindFree desativado
+            ("ligado-frio-16", true, { $0.state.setpoint = 16 }),        // fundo no máximo
+            ("ligado-quente-30", true, { $0.state.mode = "heat"; $0.state.setpoint = 30 }),
             ("ligado-seco", true, { $0.state.mode = "dry" }),
             ("ligado-ventilar", true, { $0.state.mode = "wind" }),
             ("ligado-auto", true, { $0.state.mode = "auto" }),

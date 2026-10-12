@@ -33,6 +33,8 @@ struct ControlPanel: View {
         }
         .padding(16)
         .frame(width: 320)
+        .background(ModeGlow(power: ac.state.power, mode: ac.state.mode, setpoint: ac.state.setpoint,
+                             range: ac.state.setpointMin...max(ac.state.setpointMin, ac.state.setpointMax)))
         .task { await ac.refresh(askDevice: true) }
     }
 
@@ -63,9 +65,10 @@ struct ControlPanel: View {
         return Button { ac.setPower(!on) } label: {
             Image(systemName: "power")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(on ? Color.white : Color.secondary)
+                .foregroundStyle(on ? Color(nsColor: .windowBackgroundColor) : Color.secondary)
                 .frame(width: 40, height: 40)
-                .background(Circle().fill(on ? Color.accentColor : Color.primary.opacity(0.07)))
+                // Ligado: cheio na cor do texto (branco no escuro, preto no claro), neutro e com contraste máximo.
+                .background(Circle().fill(on ? Color.primary : Color.primary.opacity(0.07)))
         }
         .buttonStyle(.hoverCircle)
         .help(on ? "Desligar" : "Ligar")
