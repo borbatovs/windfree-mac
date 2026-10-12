@@ -5,10 +5,12 @@ struct ControlPanel: View {
     @EnvironmentObject var ac: ACController
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             header
             if !ac.showSettings {
-                ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode)
+                ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode,
+                               width: 288 * 0.9)
+                    .frame(maxWidth: .infinity)
             }
             Divider()
 
@@ -65,7 +67,7 @@ struct ControlPanel: View {
                 .frame(width: 40, height: 40)
                 .background(Circle().fill(on ? Color.accentColor : Color.primary.opacity(0.07)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hoverCircle)
         .help(on ? "Desligar" : "Ligar")
         .accessibilityLabel(on ? "Desligar" : "Ligar")
         .disabled(ac.showSettings || !ac.hasLoaded)
@@ -75,11 +77,11 @@ struct ControlPanel: View {
     // MARK: Controles
 
     private var controls: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 22) {
             setpoint
             modes
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 sectionTitle("Velocidade")
                 Picker("", selection: Binding(get: { ac.state.fanMode }, set: { ac.setFan($0) })) {
                     ForEach(ac.state.supportedFanModes, id: \.self) { Text(Labels.fan($0)).tag($0) }
@@ -90,7 +92,7 @@ struct ControlPanel: View {
 
             windFreeToggle
 
-            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
+            Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 12) {
                 GridRow {
                     sectionTitle("Direção")
                     Picker("", selection: Binding(get: { ac.state.oscillation }, set: { ac.setOscillation($0) })) {
@@ -147,7 +149,7 @@ struct ControlPanel: View {
                     )
                     .foregroundStyle(selected ? Color.accentColor : Color.primary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.hover(cornerRadius: 8))
             }
         }
     }
@@ -170,23 +172,30 @@ struct ControlPanel: View {
                     .fill(ac.state.isWindFree ? Color.accentColor.opacity(0.22) : Color.primary.opacity(0.05))
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hover(cornerRadius: 8))
         .disabled(!ac.state.supportedOptionalModes.contains("windFree"))
     }
 
     // MARK: Rodapé
 
     private var footer: some View {
-        HStack(spacing: 14) {
-            Button { Task { await ac.refresh(askDevice: true) } } label: { Image(systemName: "arrow.clockwise") }
+        HStack(spacing: 4) {
+            Button { Task { await ac.refresh(askDevice: true) } } label: { footerIcon("arrow.clockwise") }
                 .help("Atualizar")
-            Button { ac.showSettings.toggle() } label: { Image(systemName: "gearshape") }
+            Button { ac.showSettings.toggle() } label: { footerIcon("gearshape") }
                 .help("Configurações")
-            if ac.isBusy { ProgressView().controlSize(.small) }
+            if ac.isBusy { ProgressView().controlSize(.small).padding(.leading, 4) }
             Spacer()
-            Button("Sair") { NSApp.terminate(nil) }
+            Button { NSApp.terminate(nil) } label: {
+                Text("Sair").padding(.horizontal, 8).frame(height: 26)
+            }
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.hover(cornerRadius: 6))
+        .padding(.horizontal, -6)   // alinha os ícones com a margem, já que o hover tem folga
+    }
+
+    private func footerIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol).frame(width: 26, height: 26)
     }
 
     // MARK: Helpers
@@ -202,7 +211,7 @@ struct ControlPanel: View {
                 .frame(width: 40, height: 40)
                 .background(Circle().fill(Color.primary.opacity(0.07)))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.hoverCircle)
     }
 }
 
@@ -216,7 +225,7 @@ struct SettingsView: View {
     @State private var working = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 20) {
             connection
             Divider()
             VStack(alignment: .leading, spacing: 10) {
