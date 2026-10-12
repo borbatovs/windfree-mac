@@ -6,10 +6,10 @@ struct ControlPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            header
             if !ac.showSettings {
                 ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode)
             }
-            header
             Divider()
 
             if ac.showSettings {
@@ -52,11 +52,24 @@ struct ControlPanel: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
-            Toggle("", isOn: Binding(get: { ac.state.power }, set: { ac.setPower($0) }))
-                .toggleStyle(.switch)
-                .labelsHidden()
-                .disabled(ac.showSettings || !ac.hasLoaded)
+            powerButton
         }
+    }
+
+    private var powerButton: some View {
+        let on = ac.state.power
+        return Button { ac.setPower(!on) } label: {
+            Image(systemName: "power")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(on ? Color.white : Color.secondary)
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(on ? Color.accentColor : Color.primary.opacity(0.07)))
+        }
+        .buttonStyle(.plain)
+        .help(on ? "Desligar" : "Ligar")
+        .accessibilityLabel(on ? "Desligar" : "Ligar")
+        .disabled(ac.showSettings || !ac.hasLoaded)
+        .animation(.easeInOut(duration: 0.2), value: on)
     }
 
     // MARK: Controles

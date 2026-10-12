@@ -34,30 +34,32 @@ struct ACIllustration: View {
     /// proporção (GeometryReader + aspectRatio) encolhia até zero.
     var width: CGFloat = 288
 
-    // Medidas do Figma: quadro de 1442 × 1063 quando ligado; a foto (916 de largura) fica a 22,12% da esquerda
-    // e o fluxo de ar (1442 × 811) começa a 23,71% do topo.
-    private static let canvasWidth: CGFloat = 1442
-    private static let photoX: CGFloat = 319
+    // Medidas do Figma (variante ligada, 996 × 934): a foto (916 × 353) fica em x = 80 e o fluxo de ar
+    // (980 × 682) começa em x = 0, y = 252. A foto fica centralizada no painel; o fluxo, que puxa para a
+    // esquerda, avança um pouco sobre a margem.
+    private static let canvasWidth: CGFloat = 996
+    private static let photoX: CGFloat = 80
     private static let photoWidth: CGFloat = 916
     private static let airFlowY: CGFloat = 252
-    private static let airFlowHeight: CGFloat = 811
+    private static let airFlowSize = CGSize(width: 980, height: 682)
 
     var body: some View {
         let s = width / Self.canvasWidth
+        let photoLeft = (width - Self.photoWidth * s) / 2
         ZStack(alignment: .topLeading) {
             photo(on: power)
                 .frame(width: Self.photoWidth * s, height: (power ? 353 : 337) * s)
-                .offset(x: Self.photoX * s)
+                .offset(x: photoLeft)
                 .id(power)
                 .transition(.opacity)
             if power {
                 AirFlowView(fanMode: fanMode, heat: mode == "heat")
-                    .frame(width: Self.canvasWidth * s, height: Self.airFlowHeight * s)
-                    .offset(y: Self.airFlowY * s)
+                    .frame(width: Self.airFlowSize.width * s, height: Self.airFlowSize.height * s)
+                    .offset(x: photoLeft - Self.photoX * s, y: Self.airFlowY * s)
                     .transition(.opacity)
             }
         }
-        .frame(width: width, height: (power ? Self.airFlowY + Self.airFlowHeight : 337) * s, alignment: .topLeading)
+        .frame(width: width, height: (power ? Self.airFlowY + Self.airFlowSize.height : 337) * s, alignment: .topLeading)
         .animation(.easeInOut(duration: 0.35), value: power)
         .accessibilityLabel(power ? "Ar-condicionado ligado" : "Ar-condicionado desligado")
     }
@@ -100,7 +102,7 @@ struct AirFlowView: View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: !visible)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
-                let scale = size.width / 1442
+                let scale = size.width / 980
                 context.scaleBy(x: scale, y: scale)
                 let travelled = distance(at: t)
                 let palette = heat ? Self.orange : Self.blue
