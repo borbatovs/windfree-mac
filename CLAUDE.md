@@ -9,6 +9,11 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - O dono do projeto não é desenvolvedor Swift de carreira: explique passos de Terminal/VS Code de forma direta,
   um comando por vez quando houver risco de confusão.
 - Compilar e instalar: `./build.sh --install` (ou `Cmd+Shift+B` no VS Code). Só checar erros: `swift build`.
+- Ver a interface sem instalar: `swift run WindFreeBar --preview` (tarefa "WindFree: pré-visualizar painel").
+  Abre o painel numa janela em modo de demonstração (`ACController(demo: true)`): dados de exemplo, sem rede,
+  sem Keychain, comandos só mudam a tela. Prefira isso para ajustes visuais; instale só quando o dono pedir.
+- Conferir o layout você mesmo: `.build/debug/WindFreeBar --snapshot <pasta>` salva PNGs do painel (ligado frio,
+  ligado quente, desligado, configurações; tema escuro). Use a pasta de rascunho, não o repositório.
 - Depois de mudar código, compile para confirmar antes de dizer que está pronto.
 - **Nunca** coloque tokens, Client ID/Secret ou códigos OAuth em arquivos do repositório. Ficam só no Keychain.
 
@@ -40,9 +45,20 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   Sem isso o toggle "volta" para desligado e o próximo clique liga de novo em vez de desligar.
 - A temperatura tem debounce de 0,7 s antes de enviar.
 - O app SmartThings do iPhone mostra uma Live Activity que o macOS espelha na barra de menus. Não é deste app.
+- O `/status` não traz o nome do aparelho; ele é relido em `GET /devices/{id}` quando o app pede `refresh`
+  (abrir o painel, botão Atualizar), para refletir renomeações feitas no SmartThings.
+- **Janela do `MenuBarExtra` mede o conteúdo propondo altura mínima**: views dimensionadas só por proporção
+  (`GeometryReader` + `aspectRatio`, `Image.resizable().aspectRatio(.fit)` sem altura) encolhem até zero e
+  somem. Dê largura e altura explícitas. `NSHostingView.fittingSize` não reproduz o problema; teste com
+  `NSHostingController.sizeThatFits(in: NSSize(width: 320, height: 0))`.
+- Mensagens de erro passam por `SmartThingsError.message(for:)`: o idioma do Mac do dono é `en-BR`, então
+  `localizedDescription` de erros do sistema (rede, JSON, `SMAppService`) viria em inglês.
+- Para conferir se um texto entrou no binário instalado, não confie em `strings`: textos de até 15 bytes UTF-8
+  (ex.: "Inicialização") ficam embutidos nas instruções pelo Swift. Compare datas do binário com o fonte.
 
 ## Autenticação
 
+- O Client ID fica em `UserDefaults` (`oauthClientId`) para preencher a tela de conexão; tokens e Secret só no Keychain.
 - OAuth com um app `API_ONLY` criado via `POST /v1/apps` (escopos `r/w/x:devices:*`,
   redirect `https://httpbin.org/get`). Não há Homebrew no Mac do dono, então a SmartThings CLI não foi usada.
 - `AuthManager` guarda access + refresh token no Keychain e renova quando falta < 5 min; um 401 força renovação
@@ -56,10 +72,32 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `ACState.swift` — modelo do estado, parse do `/status`, rótulos e ícones em português
 - `SmartThingsClient.swift` — HTTP: listar dispositivos, status, comandos
 - `AuthManager.swift` — fluxo OAuth e renovação
-- `ACController.swift` — estado observável, polling de 60 s, atualização otimista, `pending`
-- `ControlPanel.swift` — painel, tela de conexão, toggle de iniciar no login
+- `ACController.swift` — estado observável, polling de 60 s, atualização otimista, `pending`, modo demonstração
+- `ControlPanel.swift` — painel (cabeçalho com botão liga/desliga, ilustração, controles), configurações em
+  duas seções (Conexão com a SmartThings, Inicialização)
+- `ACIllustration.swift` — foto do aparelho e fluxo de ar animado no topo do painel
+- `AirFlowStrands.swift` — dados gerados dos 40 fios do fluxo de ar (não editar à mão; ver Figma abaixo)
 - `LaunchAtLogin.swift` — `SMAppService` (exige o app em /Applications)
-- `Keychain.swift`, `WindFreeBarApp.swift`, `build.sh`, `Resources/Info.plist` (`LSUIElement` = sem Dock)
+- `Preview.swift` — `--preview` (janela de pré-visualização) e `--snapshot` (capturas em PNG)
+- `WindFreeBarApp.swift` — `Launcher` (`@main`) escolhe entre app normal, `--preview` e `--snapshot`
+- `Keychain.swift`, `build.sh` (copia `Resources/*.png` para o app), `Resources/Info.plist` (`LSUIElement` = sem Dock)
+
+## Ilustração e Figma
+
+- Arquivo Figma "WindFree" (a chave do arquivo não fica no repositório; peça o link ao dono): componente `ac img` (nó 9:11825, variante
+  `state` on/off) e `Air flow` (nó 7:212, variante `Modo` auto/baixa/média/alta/turbo = `fanMode`
+  auto/low/medium/high/turbo).
+- Variante ligada: quadro 996 × 934, foto 916 × 353 em x = 80, fluxo 980 × 682 em y = 252. A foto fica
+  centralizada no painel (288 pt úteis) e o fluxo avança um pouco sobre a margem esquerda.
+- Fotos em `Resources/ac-on.png` e `ac-off.png` (reduzidas para 640 px). Fora do .app, `ACIllustration`
+  lê de `Resources/` pelo caminho do fonte.
+- Animação: em cada fio um trecho de 40% do comprimento percorre o caminho em loop contínuo (o dono pediu loop;
+  no Figma ela para depois de ~2 s). Velocidade em comprimentos/s: baixa 0,525, média 0,875, alta 1,4,
+  turbo 2,1; auto oscila 0,63–0,87 a cada 8 s. Fase e opacidade de cada fio vêm do Figma.
+  Fios azuis (5 tons do Figma); laranja no modo Quente (tons escolhidos por nós, não estão no Figma).
+- Para regerar `AirFlowStrands.swift`: `get_design_context` no nó 9:11825 dá caixa e SVG de cada fio (curva
+  cúbica `M…C`; somar o deslocamento `inset` esquerdo/superior da caixa) e `get_motion_context` dá fase
+  (`stroke-dashoffset`/`dasharray` em t = 0) e opacidade máxima.
 
 ## Ideias pendentes
 
