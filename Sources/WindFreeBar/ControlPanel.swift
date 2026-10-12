@@ -71,7 +71,6 @@ struct ControlPanel: View {
         .help(on ? "Desligar" : "Ligar")
         .accessibilityLabel(on ? "Desligar" : "Ligar")
         .disabled(ac.showSettings || !ac.hasLoaded)
-        .animation(.easeInOut(duration: 0.2), value: on)
     }
 
     // MARK: Controles

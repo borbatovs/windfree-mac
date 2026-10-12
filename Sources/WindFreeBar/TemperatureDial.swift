@@ -128,10 +128,11 @@ struct TemperatureDial: View {
 
 /// Cor de cada modo: dimmer, botão do modo e fluxo de ar.
 enum ModeColor {
-    /// - Parameter dark: tema escuro. Só o Ventilar muda: branco puro no escuro, quase preto no claro.
+    /// - Parameter dark: tema escuro. Frio e Ventilar mudam com o tema: azul-gelo claro no escuro e mais fundo
+    ///   no claro; Ventilar branco puro no escuro e quase preto no claro.
     static func hex(_ mode: String, dark: Bool = true) -> String {
         switch mode {
-        case "cool": return "#3A9FE8"
+        case "cool": return dark ? "#8CD6F5" : "#1E96CC"
         case "heat": return "#FA8C2B"
         case "dry": return "#2EC4B6"
         case "wind": return dark ? "#FFFFFF" : "#3A3A3C"

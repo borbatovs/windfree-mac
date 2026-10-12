@@ -43,30 +43,52 @@ struct ACIllustration: View {
     private static let airFlowY: CGFloat = 252
     private static let airFlowSize = CGSize(width: 980, height: 682)
 
+    private static let transition = Animation.easeInOut(duration: 0.4)
+    /// Respiro extra abaixo da foto quando desligado (sem o fluxo de ar, o dimmer ficava colado).
+    private static let offBottomSpace: CGFloat = 16
+    /// Opacidade da foto ligada, animada à parte. Um `.animation(value: power)` animaria também a
+    /// posição da foto quando o painel muda de altura, e ela "deslizaria".
+    @State private var onPhotoOpacity: Double?
+
     var body: some View {
         let s = width / Self.canvasWidth
         let photoLeft = (width - Self.photoWidth * s) / 2
         ZStack(alignment: .topLeading) {
-            photo(on: power)
-                .frame(width: Self.photoWidth * s, height: (power ? 353 : 337) * s)
+            // "Smart animate": a foto desligada fica sempre por baixo e opaca; a ligada aparece/some por cima,
+            // parada. Como o corpo é igual nas duas fotos, só a aleta parece mudar (sem o aparelho ficar
+            // translúcido no meio, como acontecia trocando uma foto pela outra).
+            photo("ac-off")
+                .frame(width: Self.photoWidth * s, height: 337 * s)
                 .offset(x: photoLeft)
-                .id(power)
-                .transition(.opacity)
+            photo("ac-on")
+                .frame(width: Self.photoWidth * s, height: 353 * s)
+                .opacity(onPhotoOpacity ?? (power ? 1 : 0))
+                .offset(x: photoLeft)
             if power {
                 AirFlowView(fanMode: fanMode, mode: mode)
                     .frame(width: Self.airFlowSize.width * s, height: Self.airFlowSize.height * s)
                     .offset(x: photoLeft - Self.photoX * s, y: Self.airFlowY * s)
-                    .transition(.opacity)
+                    // O ar sai depois que a aleta abre; ao desligar some logo.
+                    .transition(.asymmetric(
+                        insertion: .opacity.animation(.easeInOut(duration: 0.5).delay(0.25)),
+                        removal: .opacity.animation(.easeInOut(duration: 0.25))))
             }
         }
-        .frame(width: width, height: (power ? Self.airFlowY + Self.airFlowSize.height : 337) * s, alignment: .topLeading)
-        .animation(.easeInOut(duration: 0.35), value: power)
+        // A altura muda na hora, sem animação: a janela do painel salta para o tamanho final e, se a
+        // altura fosse animada, o conteúdo deslizaria dentro dela (a foto "entrava" e "saía").
+        .frame(width: width,
+               height: power ? (Self.airFlowY + Self.airFlowSize.height) * s : 337 * s + Self.offBottomSpace,
+               alignment: .topLeading)
+        .onAppear { onPhotoOpacity = power ? 1 : 0 }
+        .onChange(of: power) { on in
+            withAnimation(Self.transition) { onPhotoOpacity = on ? 1 : 0 }
+        }
         .accessibilityLabel(power ? "Ar-condicionado ligado" : "Ar-condicionado desligado")
     }
 
     @ViewBuilder
-    private func photo(on: Bool) -> some View {
-        if let image = Self.image(on ? "ac-on" : "ac-off") {
+    private func photo(_ name: String) -> some View {
+        if let image = Self.image(name) {
             Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
         }
     }
@@ -100,11 +122,10 @@ struct AirFlowView: View {
     private static let cycle = 1.4         // a cabeça vai de 0 a 1,4 (o trecho sai inteiro do fio)
     private static let segment = 0.4
 
-    /// 5 tons por modo, um para cada `AirFlowStrand.tone`. Frio usa os azuis do Figma; Quente, laranjas
-    /// escolhidos por nós; os demais variam a cor do modo (`ModeColor`) para o branco e o preto.
+    /// 5 tons por modo, um para cada `AirFlowStrand.tone`. Quente usa laranjas escolhidos por nós; os demais
+    /// (inclusive o Frio, em azul-gelo) variam a cor do modo (`ModeColor`) para o branco e o preto.
     private static func palette(for mode: String, dark: Bool) -> [Color] {
         switch mode {
-        case "cool": return ["#1F91E8", "#2BADFA", "#33C4FF", "#21A3E8", "#52B8F5"].map(Color.init(hex:))
         case "heat": return ["#E8731F", "#FA8C2B", "#FFA333", "#E8851F", "#F5A052"].map(Color.init(hex:))
         default:
             let base = NSColor(hex: ModeColor.hex(mode, dark: dark))
