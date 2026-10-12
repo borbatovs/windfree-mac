@@ -1,7 +1,22 @@
 import SwiftUI
 import AppKit
 
+/// Ponto de entrada. Sem argumentos abre o app normal na barra de menus.
+/// `--preview` abre o painel numa janela com dados de exemplo; `--snapshot <pasta>` salva capturas do painel.
 @main
+enum Launcher {
+    @MainActor static func main() {
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--snapshot") {
+            Snapshots.render(to: i + 1 < args.count ? args[i + 1] : "snapshots")
+        } else if args.contains("--preview") {
+            PreviewApp.main()
+        } else {
+            WindFreeBarApp.main()
+        }
+    }
+}
+
 struct WindFreeBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var controller = ACController()

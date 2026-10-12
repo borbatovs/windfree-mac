@@ -32,8 +32,9 @@ final class AuthManager {
     private(set) var credentials: OAuthCredentials?
     private var refreshTask: Task<OAuthCredentials, Error>?
 
-    init() {
-        credentials = Keychain.loadCredentials()
+    /// - Parameter credentials: na pré-visualização passa `nil` para não ler o Keychain.
+    init(credentials: OAuthCredentials? = Keychain.loadCredentials()) {
+        self.credentials = credentials
     }
 
     var isConfigured: Bool { credentials != nil }

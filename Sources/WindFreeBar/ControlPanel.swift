@@ -222,6 +222,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("Inicialização")
                 LaunchAtLoginToggle()
+                    .disabled(ac.isDemo)   // registraria o executável de desenvolvimento no login
             }
             if ac.isConnected {
                 HStack {
@@ -243,6 +244,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.green)
                 Button("Desconectar", role: .destructive) { ac.disconnect() }
+                    .disabled(ac.isDemo)
             } else {
                 step("1", "Client ID e Client Secret do app OAuth da SmartThings")
                 TextField("Client ID", text: $clientId)

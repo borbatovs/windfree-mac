@@ -33,7 +33,21 @@ final class ACController: ObservableObject {
     /// Client Secret digitado mas ainda não salvo (some se o app fechar).
     @Published var draftClientSecret = ""
 
-    init() {
+    /// Modo de demonstração (`--preview` / `--snapshot`): dados de exemplo, sem rede e sem Keychain.
+    /// Os comandos só mudam a tela.
+    let isDemo: Bool
+
+    init(demo: Bool = false) {
+        isDemo = demo
+        if demo {
+            auth = AuthManager(credentials: nil)
+            isConnected = true
+            showSettings = false
+            hasLoaded = true
+            state = .demo
+            deviceLabel = "AC Sala (demonstração)"
+            return
+        }
         auth = AuthManager()
         isConnected = auth.isConfigured
         showSettings = !auth.isConfigured
@@ -57,6 +71,7 @@ final class ACController: ObservableObject {
     }
 
     func connect(clientId: String, clientSecret: String, code: String) async {
+        guard !isDemo else { return }
         do {
             try await auth.connect(
                 clientId: clientId.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -73,6 +88,7 @@ final class ACController: ObservableObject {
     }
 
     func disconnect() {
+        guard !isDemo else { return }
         auth.disconnect()
         isConnected = false
         hasLoaded = false
@@ -175,6 +191,7 @@ final class ACController: ObservableObject {
 
     private func send(_ capability: String, _ command: String, _ args: [Any] = [],
                       apply: @escaping (inout ACState) -> Void) {
+        if isDemo { apply(&state); return }
         guard let client, let deviceId else { return }
         let previousState = state
         let previousPending = pending[capability]

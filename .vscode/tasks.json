@@ -18,6 +18,13 @@
       "presentation": { "reveal": "always", "clear": true }
     },
     {
+      "label": "WindFree: pré-visualizar painel",
+      "type": "shell",
+      "command": "swift run WindFreeBar --preview",
+      "problemMatcher": ["$swiftc"],
+      "presentation": { "reveal": "always", "clear": true }
+    },
+    {
       "label": "WindFree: rodar sem instalar",
       "type": "shell",
       "command": "pkill -x WindFreeBar; swift run",

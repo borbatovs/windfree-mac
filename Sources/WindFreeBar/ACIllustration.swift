@@ -73,11 +73,15 @@ struct ACIllustration: View {
 
     private static var cache: [String: NSImage] = [:]
 
-    /// As fotos são copiadas para o app pelo build.sh (Contents/Resources).
+    /// As fotos são copiadas para o app pelo build.sh (Contents/Resources). Rodando com `swift run`
+    /// (pré-visualização) não há .app: usa a pasta Resources do projeto.
     private static func image(_ name: String) -> NSImage? {
         if let cached = cache[name] { return cached }
-        guard let url = Bundle.main.url(forResource: name, withExtension: "png"),
-              let image = NSImage(contentsOf: url) else { return nil }
+        let projectResources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Resources/\(name).png")
+        let url = Bundle.main.url(forResource: name, withExtension: "png") ?? projectResources
+        guard let image = NSImage(contentsOf: url) else { return nil }
         cache[name] = image
         return image
     }

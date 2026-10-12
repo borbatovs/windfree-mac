@@ -21,6 +21,16 @@ struct ACState: Equatable {
 
     var isWindFree: Bool { optionalMode == "windFree" || optionalMode == "windFreeSleep" }
 
+    /// Estado de exemplo para a pré-visualização.
+    static var demo: ACState {
+        var s = ACState()
+        s.power = true
+        s.fanMode = "high"
+        s.roomTemperature = 23
+        s.humidity = 55
+        return s
+    }
+
     static func parse(_ data: Data) throws -> ACState {
         guard
             let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
