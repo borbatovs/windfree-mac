@@ -20,8 +20,6 @@ struct SelectorTile: View {
     var unavailableReason: String? = nil
     let options: () -> [Option]
 
-    @Environment(\.isEnabled) private var isEnabled
-
     var body: some View {
         Button { OptionMenu.show(options()) } label: {
             VStack(alignment: .leading, spacing: 0) {
@@ -53,7 +51,8 @@ struct SelectorTile: View {
         }
         .buttonStyle(.hover(cornerRadius: 10))
         .disabled(unavailableReason != nil)
-        .opacity(isEnabled && unavailableReason == nil ? 1 : 0.4)
+        // Apaga só quando a função não está disponível; com o ar desligado o painel já apaga todos os controles.
+        .opacity(unavailableReason == nil ? 1 : 0.4)
         .help(unavailableReason ?? "\(title): \(value)")
     }
 }

@@ -40,6 +40,8 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   fica desativado nesse modo. Nos demais modos ainda não foi testado um por um. Trocar para `heat` com
   WindFree ligado é aceito: o próprio aparelho abre a aleta e desliga o WindFree (não é preciso desligar antes);
   o `setMode` já mostra "Desligado" na hora para o WindFree simples (WindFree Sono espera a nuvem).
+- Com o aparelho desligado, um comando de modo **liga o aparelho**. Por isso, desligado o painel bloqueia
+  dimmer, modos e seletores (`.disabled` + dica "Ligue o ar para alterar"); só o botão de energia liga.
 - Leituras disponíveis: `temperatureMeasurement`, `relativeHumidityMeasurement`, `powerConsumptionReport`
   (energia acumulada em Wh), `custom.dustFilter` (uso do filtro em horas).
 - Desativadas neste modelo (`custom.disabledCapabilities`): sensores de qualidade do ar/poeira/odor,
@@ -150,3 +152,4 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Presets com um clique (ex.: "Dormir" = WindFree Sono a 24°)
 - Mostrar consumo de energia e alerta de limpeza do filtro
 - Timer de desligar
+- Pré-selecionar modo/temperatura com o ar desligado e aplicar ao ligar (hoje os controles ficam bloqueados)

@@ -19,6 +19,12 @@ struct ControlPanel: View {
             } else {
                 controls
                     .opacity(ac.state.power ? 1 : 0.55)
+                    .overlay {
+                        // Só explica ao passar o mouse; os cliques já estão bloqueados pelo .disabled.
+                        if !ac.state.power {
+                            Color.clear.contentShape(Rectangle()).help("Ligue o ar para alterar")
+                        }
+                    }
             }
 
             if let error = ac.errorMessage {
@@ -85,7 +91,9 @@ struct ControlPanel: View {
 
             selectors
         }
-        .disabled(!ac.hasLoaded)
+        // Desligado não envia comandos: o aparelho liga sozinho ao receber, por exemplo, um modo. Só o
+        // botão de energia liga.
+        .disabled(!ac.hasLoaded || !ac.state.power)
     }
 
     private var setpoint: some View {
@@ -124,20 +132,20 @@ struct ControlPanel: View {
             SelectorTile(icon: "fan", title: "Velocidade", value: Labels.fan(st.fanMode)) {
                 st.supportedFanModes.map { fan in .init(title: Labels.fan(fan), selected: fan == st.fanMode) { ac.setFan(fan) } }
             }
-            SelectorTile(icon: "moon.zzz", title: "Sono", value: onOff[st.isSleep ? 1 : 0], active: st.isSleep) {
+            SelectorTile(icon: "moon.zzz", title: "Sono", value: onOff[st.isSleep ? 1 : 0], active: st.isSleep,
+                         unavailableReason: st.supportedOptionalModes.contains("sleep") ? nil : "Não disponível neste aparelho") {
                 [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isSleep) { ac.setSleep(on) } }
             }
-            .disabled(!st.supportedOptionalModes.contains("sleep"))
             SelectorTile(icon: "arrow.up.and.down.and.arrow.left.and.right", iconSize: 15, title: "Direção",
                          value: Labels.oscillation(st.oscillation)) {
                 st.supportedOscillation.map { o in .init(title: Labels.oscillation(o), selected: o == st.oscillation) { ac.setOscillation(o) } }
             }
             // O aparelho recusa WindFree no modo Quente (testado em 12/10/2026).
             SelectorTile(icon: "fan.slash", title: "WindFree", value: onOff[st.isWindFree ? 1 : 0], active: st.isWindFree,
-                         unavailableReason: st.mode == "heat" ? "WindFree não funciona no modo Quente" : nil) {
+                         unavailableReason: !st.supportedOptionalModes.contains("windFree") ? "Não disponível neste aparelho"
+                            : st.mode == "heat" ? "WindFree não funciona no modo Quente" : nil) {
                 [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isWindFree) { ac.setWindFree(on) } }
             }
-            .disabled(!st.supportedOptionalModes.contains("windFree"))
         }
     }
 
