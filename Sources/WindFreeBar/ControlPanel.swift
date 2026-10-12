@@ -6,6 +6,9 @@ struct ControlPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
+            if !ac.showSettings {
+                ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode)
+            }
             header
             Divider()
 

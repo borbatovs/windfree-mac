@@ -9,9 +9,10 @@ swift build -c release
 
 APP="build/WindFree.app"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/WindFreeBar "$APP/Contents/MacOS/WindFreeBar"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+cp Resources/*.png "$APP/Contents/Resources/"
 
 # Assinatura local (ad-hoc), suficiente para rodar no seu próprio Mac
 codesign --force --sign - "$APP"
