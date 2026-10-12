@@ -17,8 +17,33 @@ enum SmartThingsError: LocalizedError {
         case .oauthRejected(let body): return "A SmartThings recusou a autorização: \(body.prefix(160))"
         case .noAirConditioner: return "Nenhum ar-condicionado encontrado na conta SmartThings."
         case .unexpectedResponse: return "Resposta inesperada da SmartThings."
+        case .http(429, _): return "Muitas requisições seguidas. Aguarde um pouco e tente de novo."
+        case .http(let code, _) where code >= 500:
+            return "A SmartThings está com instabilidade (erro \(code)). Tente de novo mais tarde."
         case .http(let code, let body): return "Erro \(code) da SmartThings: \(body.prefix(160))"
         }
+    }
+
+    /// Mensagem em português para qualquer erro. Os erros do sistema (rede, JSON) viriam no idioma do Mac.
+    static func message(for error: Error) -> String {
+        if let st = error as? SmartThingsError { return st.errorDescription ?? "" }
+        if let url = error as? URLError {
+            switch url.code {
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                return "Sem conexão com a internet. O app tenta de novo sozinho a cada minuto."
+            case .timedOut:
+                return "A SmartThings demorou para responder. Tente de novo em instantes."
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+                return "Não foi possível alcançar a SmartThings. Confira a internet."
+            case .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate,
+                 .serverCertificateNotYetValid, .serverCertificateHasUnknownRoot:
+                return "Falha na conexão segura com a SmartThings."
+            default:
+                return "Erro de rede (código \(url.code.rawValue)). Tente de novo."
+            }
+        }
+        let ns = error as NSError
+        return "Erro inesperado (\(ns.domain) \(ns.code)). Tente atualizar."
     }
 
     var needsReauthorization: Bool {

@@ -313,7 +313,8 @@ struct LaunchAtLoginToggle: View {
             try LaunchAtLogin.set(value)
             error = nil
         } catch {
-            self.error = "Não foi possível alterar: \(error.localizedDescription). O app precisa estar em /Applications."
+            let code = (error as NSError).code
+            self.error = "Não foi possível alterar (código \(code)). O app precisa estar em /Applications."
         }
         sync()
     }

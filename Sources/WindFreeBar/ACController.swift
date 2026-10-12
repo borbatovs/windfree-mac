@@ -212,6 +212,6 @@ final class ACController: ObservableObject {
     private func handle(_ error: Error) {
         isConnected = auth.isConfigured
         if let st = error as? SmartThingsError, st.needsReauthorization { showSettings = true }
-        errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        errorMessage = SmartThingsError.message(for: error)
     }
 }
