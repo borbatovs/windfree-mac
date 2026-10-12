@@ -8,7 +8,7 @@ struct PreviewApp: App {
     @StateObject private var controller = ACController(demo: true)
 
     var body: some Scene {
-        Window("WindFree — pré-visualização", id: "preview") {
+        Window(tr("WindFree — pré-visualização", "WindFree — preview"), id: "preview") {
             ControlPanel()
                 .environmentObject(controller)
         }
@@ -27,7 +27,8 @@ final class PreviewAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
 
-/// `swift run WindFreeBar --snapshot <pasta>`: salva PNGs do painel em alguns estados (temas escuro e claro).
+/// `swift run WindFreeBar --snapshot <pasta>`: salva PNGs do painel em alguns estados (temas escuro e claro;
+/// os casos com prefixo `en-` saem em inglês).
 @MainActor
 enum Snapshots {
     static func render(to directory: String) {
@@ -47,11 +48,19 @@ enum Snapshots {
             ("claro-ligado-frio", false, { _ in }),
             ("claro-ligado-ventilar", false, { $0.state.mode = "wind" }),
             ("claro-configuracoes", false, { $0.showSettings = true }),
+            ("en-ligado-frio", true, { _ in }),
+            ("en-configuracoes", true, { $0.showSettings = true }),
         ]
+        // O idioma vem das preferências; guarda o da pré-visualização para restaurar no fim.
+        let defaults = UserDefaults.standard
+        let savedLanguage = defaults.string(forKey: AppLanguage.storageKey)
+        defer { defaults.set(savedLanguage, forKey: AppLanguage.storageKey) }
         let folder = URL(fileURLWithPath: directory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
         for item in cases {
+            defaults.set(item.name.hasPrefix("en-") ? AppLanguage.en.rawValue : AppLanguage.pt.rawValue,
+                         forKey: AppLanguage.storageKey)
             let ac = ACController(demo: true)
             item.setup(ac)
             let view = NSHostingView(rootView: ControlPanel()

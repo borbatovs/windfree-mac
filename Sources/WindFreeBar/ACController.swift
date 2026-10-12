@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 final class ACController: ObservableObject {
     @Published var state = ACState()
-    @Published var deviceLabel = "Ar-condicionado"
+    @Published var deviceLabel = tr("Ar-condicionado", "Air conditioner")
     @Published var errorMessage: String?
     @Published var isBusy = false
     @Published var hasLoaded = false
@@ -45,7 +45,7 @@ final class ACController: ObservableObject {
             showSettings = false
             hasLoaded = true
             state = .demo
-            deviceLabel = "AC Sala (demonstração)"
+            deviceLabel = tr("AC Sala (demonstração)", "Living room AC (demo)")
             return
         }
         auth = AuthManager()

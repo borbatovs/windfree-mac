@@ -11,16 +11,16 @@ enum SmartThingsError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unauthorized: return "Não conectado à SmartThings. Conecte nas configurações."
-        case .sessionExpired: return "A autorização expirou. Conecte de novo nas configurações."
-        case .forbidden: return "Sem permissão. Confira se o app OAuth tem os escopos r, w e x de devices."
-        case .oauthRejected(let body): return "A SmartThings recusou a autorização: \(body.prefix(160))"
-        case .noAirConditioner: return "Nenhum ar-condicionado encontrado na conta SmartThings."
-        case .unexpectedResponse: return "Resposta inesperada da SmartThings."
-        case .http(429, _): return "Muitas requisições seguidas. Aguarde um pouco e tente de novo."
+        case .unauthorized: return tr("Não conectado à SmartThings. Conecte nas configurações.", "Not connected to SmartThings. Connect in Settings.")
+        case .sessionExpired: return tr("A autorização expirou. Conecte de novo nas configurações.", "Authorization expired. Connect again in Settings.")
+        case .forbidden: return tr("Sem permissão. Confira se o app OAuth tem os escopos r, w e x de devices.", "Permission denied. Check that the OAuth app has the r, w and x device scopes.")
+        case .oauthRejected(let body): return tr("A SmartThings recusou a autorização: ", "SmartThings rejected the authorization: ") + body.prefix(160)
+        case .noAirConditioner: return tr("Nenhum ar-condicionado encontrado na conta SmartThings.", "No air conditioner found in the SmartThings account.")
+        case .unexpectedResponse: return tr("Resposta inesperada da SmartThings.", "Unexpected response from SmartThings.")
+        case .http(429, _): return tr("Muitas requisições seguidas. Aguarde um pouco e tente de novo.", "Too many requests. Wait a moment and try again.")
         case .http(let code, _) where code >= 500:
-            return "A SmartThings está com instabilidade (erro \(code)). Tente de novo mais tarde."
-        case .http(let code, let body): return "Erro \(code) da SmartThings: \(body.prefix(160))"
+            return tr("A SmartThings está com instabilidade (erro \(code)). Tente de novo mais tarde.", "SmartThings is having problems (error \(code)). Try again later.")
+        case .http(let code, let body): return tr("Erro \(code) da SmartThings: ", "SmartThings error \(code): ") + body.prefix(160)
         }
     }
 
@@ -30,20 +30,20 @@ enum SmartThingsError: LocalizedError {
         if let url = error as? URLError {
             switch url.code {
             case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-                return "Sem conexão com a internet. O app tenta de novo sozinho a cada minuto."
+                return tr("Sem conexão com a internet. O app tenta de novo sozinho a cada minuto.", "No internet connection. The app retries every minute.")
             case .timedOut:
-                return "A SmartThings demorou para responder. Tente de novo em instantes."
+                return tr("A SmartThings demorou para responder. Tente de novo em instantes.", "SmartThings took too long to respond. Try again shortly.")
             case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
-                return "Não foi possível alcançar a SmartThings. Confira a internet."
+                return tr("Não foi possível alcançar a SmartThings. Confira a internet.", "Couldn't reach SmartThings. Check your internet connection.")
             case .secureConnectionFailed, .serverCertificateUntrusted, .serverCertificateHasBadDate,
                  .serverCertificateNotYetValid, .serverCertificateHasUnknownRoot:
-                return "Falha na conexão segura com a SmartThings."
+                return tr("Falha na conexão segura com a SmartThings.", "Secure connection to SmartThings failed.")
             default:
-                return "Erro de rede (código \(url.code.rawValue)). Tente de novo."
+                return tr("Erro de rede (código \(url.code.rawValue)). Tente de novo.", "Network error (code \(url.code.rawValue)). Try again.")
             }
         }
         let ns = error as NSError
-        return "Erro inesperado (\(ns.domain) \(ns.code)). Tente atualizar."
+        return tr("Erro inesperado (\(ns.domain) \(ns.code)). Tente atualizar.", "Unexpected error (\(ns.domain) \(ns.code)). Try refreshing.")
     }
 
     var needsReauthorization: Bool {
@@ -116,7 +116,7 @@ struct SmartThingsClient {
     }
 
     private static func label(of item: [String: Any]) -> String {
-        (item["label"] as? String) ?? (item["name"] as? String) ?? "Ar-condicionado"
+        (item["label"] as? String) ?? (item["name"] as? String) ?? tr("Ar-condicionado", "Air conditioner")
     }
 
     func status(deviceId: String) async throws -> ACState {

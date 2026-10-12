@@ -5,7 +5,13 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 
 ## Como trabalhar aqui
 
-- Converse e escreva textos da interface em **português do Brasil**. Identificadores no código em inglês.
+- Converse com o dono em **português do Brasil**. Identificadores e comentários do código seguem como estão
+  (identificadores em inglês, comentários em português).
+- A interface é **bilíngue (português e inglês)**, escolhida em Configurações › Idioma (padrão: português; não
+  segue o idioma do macOS). Todo texto visível — inclusive dicas (`.help`), acessibilidade e mensagens de erro —
+  passa por `tr("português", "English")` (`AppLanguage.swift`); rótulos de valores da API ficam em `Labels`.
+  Ao trocar o idioma o painel é reconstruído (`.id(language)` no `ControlPanel`). Nunca deixe texto fixo
+  só em um idioma. As capturas `en-*` do `--snapshot` mostram a versão em inglês.
 - O dono do projeto não é desenvolvedor Swift de carreira: explique passos de Terminal/VS Code de forma direta,
   um comando por vez quando houver risco de confusão.
 - Compilar e instalar: `./build.sh --install` (ou `Cmd+Shift+B` no VS Code). Só checar erros: `swift build`.
@@ -97,13 +103,14 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `ACController.swift` — estado observável, polling de 60 s, atualização otimista, `pending`, modo demonstração
 - `ControlPanel.swift` — painel: cabeçalho (nome, ambiente, botão de energia), ilustração, dimmer, botões de modo
   (só ícone), 4 seletores (Velocidade, Sono, Direção, WindFree), rodapé com engrenagem; configurações em seções
-  (Conexão com "Atualizar agora"/"Desconectar", Aparência, Inicialização, "Sair do WindFree") e botão de voltar
+  (Conexão com "Atualizar agora"/"Desconectar", Aparência, Idioma, Inicialização, "Sair do WindFree") e botão de voltar
   com ícone no rodapé. Modo especial e Auto limpeza foram retirados da tela (o código de envio continua).
 - `ACIllustration.swift` — foto do aparelho e fluxo de ar animado no topo do painel
 - `TemperatureDial.swift` — dimmer de temperatura e `ModeColor` (cor de cada modo)
 - `SelectorTile.swift` — cartão de seleção com menu nativo (`OptionMenu`)
 - `ModeGlow.swift` — gradiente de fundo na cor do modo
 - `HoverButtonStyle.swift` — hover/clique dos botões personalizados
+- `AppLanguage.swift` — idioma da interface e `tr(_:_:)`
 - `AppAppearance.swift` — tema Sistema/Claro/Escuro (`NSApp.appearance`)
 - `AirFlowStrands.swift` — dados gerados dos 40 fios do fluxo de ar (não editar à mão; ver Figma abaixo)
 - `LaunchAtLogin.swift` — `SMAppService` (exige o app em /Applications)

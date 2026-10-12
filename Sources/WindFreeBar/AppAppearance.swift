@@ -8,9 +8,9 @@ enum AppAppearance: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .system: return "Sistema"
-        case .light: return "Claro"
-        case .dark: return "Escuro"
+        case .system: return tr("Sistema", "System")
+        case .light: return tr("Claro", "Light")
+        case .dark: return tr("Escuro", "Dark")
         }
     }
 

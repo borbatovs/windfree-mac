@@ -90,23 +90,52 @@ struct ACState: Equatable {
     }
 }
 
-/// Rótulos em português e ícones (SF Symbols) para os valores da API.
+/// Rótulos (no idioma escolhido) e ícones (SF Symbols) para os valores da API.
 enum Labels {
     static func mode(_ m: String) -> String {
-        ["auto": "Auto", "cool": "Frio", "dry": "Seco", "wind": "Ventilar", "heat": "Quente"][m] ?? m
+        switch m {
+        case "auto": return tr("Auto", "Auto")
+        case "cool": return tr("Frio", "Cool")
+        case "dry": return tr("Seco", "Dry")
+        case "wind": return tr("Ventilar", "Fan")
+        case "heat": return tr("Quente", "Heat")
+        default: return m
+        }
     }
     static func modeIcon(_ m: String) -> String {
         ["auto": "arrow.triangle.2.circlepath", "cool": "snowflake", "dry": "drop",
          "wind": "wind", "heat": "flame"][m] ?? "questionmark"
     }
     static func fan(_ f: String) -> String {
-        ["auto": "Auto", "low": "Baixa", "medium": "Média", "high": "Alta", "turbo": "Turbo"][f] ?? f
+        switch f {
+        case "auto": return tr("Auto", "Auto")
+        case "low": return tr("Baixa", "Low")
+        case "medium": return tr("Média", "Medium")
+        case "high": return tr("Alta", "High")
+        case "turbo": return tr("Turbo", "Turbo")
+        default: return f
+        }
     }
     static func oscillation(_ o: String) -> String {
-        ["fixed": "Fixa", "vertical": "Vertical", "horizontal": "Horizontal", "all": "Todas"][o] ?? o
+        switch o {
+        case "fixed": return tr("Fixa", "Fixed")
+        case "vertical": return tr("Vertical", "Vertical")
+        case "horizontal": return tr("Horizontal", "Horizontal")
+        case "all": return tr("Todas", "All")
+        default: return o
+        }
     }
     static func optional(_ o: String) -> String {
-        ["off": "Nenhum", "sleep": "Sono", "quiet": "Silencioso", "smart": "Smart",
-         "speed": "Speed", "windFree": "WindFree", "windFreeSleep": "WindFree Sono"][o] ?? o
+        switch o {
+        case "off": return tr("Nenhum", "None")
+        case "sleep": return tr("Sono", "Sleep")
+        case "quiet": return tr("Silencioso", "Quiet")
+        case "smart": return "Smart"
+        case "speed": return "Speed"
+        case "windFree": return "WindFree"
+        case "windFreeSleep": return tr("WindFree Sono", "WindFree Sleep")
+        default: return o
+        }
     }
+    static func onOff(_ on: Bool) -> String { on ? tr("Ligado", "On") : tr("Desligado", "Off") }
 }

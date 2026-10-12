@@ -139,7 +139,7 @@ final class AuthManager {
         let body = String(data: data, encoding: .utf8) ?? ""
         switch http.statusCode {
         case 200..<300: break
-        case 400, 401: throw SmartThingsError.oauthRejected(body.isEmpty ? "código inválido ou já usado (HTTP \(http.statusCode)). Autorize de novo." : body)
+        case 400, 401: throw SmartThingsError.oauthRejected(body.isEmpty ? tr("código inválido ou já usado (HTTP \(http.statusCode)). Autorize de novo.", "invalid or already used code (HTTP \(http.statusCode)). Authorize again.") : body)
         default: throw SmartThingsError.http(http.statusCode, body)
         }
 

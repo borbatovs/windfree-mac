@@ -3,6 +3,8 @@ import AppKit
 
 struct ControlPanel: View {
     @EnvironmentObject var ac: ACController
+    /// Ao trocar o idioma o painel é reconstruído (`.id`), para todos os textos `tr(...)` mudarem na hora.
+    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.pt
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -22,7 +24,7 @@ struct ControlPanel: View {
                     .overlay {
                         // Só explica ao passar o mouse; os cliques já estão bloqueados pelo .disabled.
                         if !ac.state.power {
-                            Color.clear.contentShape(Rectangle()).help("Ligue o ar para alterar")
+                            Color.clear.contentShape(Rectangle()).help(tr("Ligue o ar para alterar", "Turn the AC on to change this"))
                         }
                     }
             }
@@ -34,9 +36,12 @@ struct ControlPanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Divider()
-            footer
+            if !ac.showSettings {
+                Divider()
+                footer
+            }
         }
+        .id(language)
         .padding(16)
         .frame(width: 320)
         .background(ModeGlow(power: ac.state.power, mode: ac.state.mode, setpoint: ac.state.setpoint,
@@ -47,12 +52,24 @@ struct ControlPanel: View {
     // MARK: Cabeçalho
 
     private var header: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 6) {
+            if ac.showSettings && ac.isConnected {
+                // Sem conexão não há para onde voltar: o painel ficaria vazio.
+                Button { ac.showSettings = false } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(width: 26, height: 26)
+                }
+                .buttonStyle(.hover(cornerRadius: 6))
+                .help(tr("Voltar", "Back"))
+                .keyboardShortcut(.cancelAction)
+                .padding(.leading, -6)   // alinha o ícone com a margem, já que o hover tem folga
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(ac.deviceLabel).font(.headline)
                 HStack(spacing: 10) {
                     if let t = ac.state.roomTemperature {
-                        Label("\(Int(t))° no ambiente", systemImage: "thermometer.medium")
+                        Label(tr("\(Int(t))° no ambiente", "\(Int(t))° in the room"), systemImage: "thermometer.medium")
                     }
                     if let h = ac.state.humidity {
                         Label("\(Int(h))%", systemImage: "humidity")
@@ -77,8 +94,8 @@ struct ControlPanel: View {
                 .background(Circle().fill(on ? Color.primary : Color.primary.opacity(0.07)))
         }
         .buttonStyle(.hoverCircle)
-        .help(on ? "Desligar" : "Ligar")
-        .accessibilityLabel(on ? "Desligar" : "Ligar")
+        .help(on ? tr("Desligar", "Turn off") : tr("Ligar", "Turn on"))
+        .accessibilityLabel(on ? tr("Desligar", "Turn off") : tr("Ligar", "Turn on"))
         .disabled(ac.showSettings || !ac.hasLoaded)
     }
 
@@ -127,24 +144,24 @@ struct ControlPanel: View {
 
     private var selectors: some View {
         let st = ac.state
-        let onOff = ["Desligado", "Ligado"]
+        let notAvailable = tr("Não disponível neste aparelho", "Not available on this unit")
         return HStack(spacing: 8) {
-            SelectorTile(icon: "fan", title: "Velocidade", value: Labels.fan(st.fanMode)) {
+            SelectorTile(icon: "fan", title: tr("Velocidade", "Fan speed"), value: Labels.fan(st.fanMode)) {
                 st.supportedFanModes.map { fan in .init(title: Labels.fan(fan), selected: fan == st.fanMode) { ac.setFan(fan) } }
             }
-            SelectorTile(icon: "moon.zzz", title: "Sono", value: onOff[st.isSleep ? 1 : 0], active: st.isSleep,
-                         unavailableReason: st.supportedOptionalModes.contains("sleep") ? nil : "Não disponível neste aparelho") {
-                [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isSleep) { ac.setSleep(on) } }
+            SelectorTile(icon: "moon.zzz", title: tr("Sono", "Sleep"), value: Labels.onOff(st.isSleep), active: st.isSleep,
+                         unavailableReason: st.supportedOptionalModes.contains("sleep") ? nil : notAvailable) {
+                [false, true].map { on in .init(title: Labels.onOff(on), selected: on == st.isSleep) { ac.setSleep(on) } }
             }
-            SelectorTile(icon: "arrow.up.and.down.and.arrow.left.and.right", iconSize: 15, title: "Direção",
+            SelectorTile(icon: "arrow.up.and.down.and.arrow.left.and.right", iconSize: 15, title: tr("Direção", "Airflow"),
                          value: Labels.oscillation(st.oscillation)) {
                 st.supportedOscillation.map { o in .init(title: Labels.oscillation(o), selected: o == st.oscillation) { ac.setOscillation(o) } }
             }
             // O aparelho recusa WindFree no modo Quente (testado em 12/10/2026).
-            SelectorTile(icon: "fan.slash", title: "WindFree", value: onOff[st.isWindFree ? 1 : 0], active: st.isWindFree,
-                         unavailableReason: !st.supportedOptionalModes.contains("windFree") ? "Não disponível neste aparelho"
-                            : st.mode == "heat" ? "WindFree não funciona no modo Quente" : nil) {
-                [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isWindFree) { ac.setWindFree(on) } }
+            SelectorTile(icon: "fan.slash", title: "WindFree", value: Labels.onOff(st.isWindFree), active: st.isWindFree,
+                         unavailableReason: !st.supportedOptionalModes.contains("windFree") ? notAvailable
+                            : st.mode == "heat" ? tr("WindFree não funciona no modo Quente", "WindFree doesn't work in Heat mode") : nil) {
+                [false, true].map { on in .init(title: Labels.onOff(on), selected: on == st.isWindFree) { ac.setWindFree(on) } }
             }
         }
     }
@@ -153,15 +170,8 @@ struct ControlPanel: View {
 
     private var footer: some View {
         HStack(spacing: 4) {
-            if !ac.showSettings {
-                Button { ac.showSettings = true } label: { footerIcon("gearshape") }
-                    .help("Configurações")
-            } else if ac.isConnected {
-                // Sem conexão não há para onde voltar: o painel ficaria vazio.
-                Button { ac.showSettings = false } label: { footerIcon("chevron.left") }
-                    .help("Voltar")
-                    .keyboardShortcut(.cancelAction)
-            }
+            Button { ac.showSettings = true } label: { footerIcon("gearshape") }
+                .help(tr("Configurações", "Settings"))
             if ac.isBusy { ProgressView().controlSize(.small).padding(.leading, 4) }
             Spacer()
         }
@@ -183,13 +193,14 @@ struct SettingsView: View {
     private var clientSecret: Binding<String> { $ac.draftClientSecret }
     @State private var working = false
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
+    @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.pt
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             connection
             Divider()
             VStack(alignment: .leading, spacing: 10) {
-                sectionTitle("Aparência")
+                sectionTitle(tr("Aparência", "Appearance"))
                 Picker("", selection: $appearance) {
                     ForEach(AppAppearance.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
@@ -199,43 +210,52 @@ struct SettingsView: View {
             .onChange(of: appearance) { $0.apply() }
             Divider()
             VStack(alignment: .leading, spacing: 10) {
-                sectionTitle("Inicialização")
+                sectionTitle(tr("Idioma", "Language"))
+                Picker("", selection: $language) {
+                    ForEach(AppLanguage.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            Divider()
+            VStack(alignment: .leading, spacing: 10) {
+                sectionTitle(tr("Inicialização", "Startup"))
                 LaunchAtLoginToggle()
                     .disabled(ac.isDemo)   // registraria o executável de desenvolvimento no login
             }
-            Button("Sair do WindFree") { NSApp.terminate(nil) }
+            Button(tr("Sair do WindFree", "Quit WindFree")) { NSApp.terminate(nil) }
         }
         .onAppear { if clientId.isEmpty { clientId = ac.savedClientId } }
     }
 
     private var connection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Conexão com a SmartThings")
+            sectionTitle(tr("Conexão com a SmartThings", "SmartThings connection"))
 
             if ac.isConnected {
-                Label("Conectado. O acesso é renovado automaticamente.", systemImage: "checkmark.circle.fill")
+                Label(tr("Conectado. O acesso é renovado automaticamente.", "Connected. Access renews automatically."), systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(.green)
                 HStack {
-                    Button("Atualizar agora") { Task { await ac.refresh(askDevice: true) } }
-                        .help("Pede ao aparelho o estado atual")
-                    Button("Desconectar", role: .destructive) { ac.disconnect() }
+                    Button(tr("Atualizar agora", "Refresh now")) { Task { await ac.refresh(askDevice: true) } }
+                        .help(tr("Pede ao aparelho o estado atual", "Ask the unit for its current state"))
+                    Button(tr("Desconectar", "Disconnect"), role: .destructive) { ac.disconnect() }
                         .disabled(ac.isDemo)
                 }
             } else {
-                step("1", "Client ID e Client Secret do app OAuth da SmartThings")
+                step("1", tr("Client ID e Client Secret do app OAuth da SmartThings", "Client ID and Client Secret of the SmartThings OAuth app"))
                 TextField("Client ID", text: $clientId)
                     .textFieldStyle(.roundedBorder)
                 SecureField("Client Secret", text: clientSecret)
                     .textFieldStyle(.roundedBorder)
 
-                step("2", "Autorize no navegador")
-                Button("Abrir página de autorização") {
+                step("2", tr("Autorize no navegador", "Authorize in the browser"))
+                Button(tr("Abrir página de autorização", "Open authorization page")) {
                     openURL(ac.authorizeURL(clientId: clientId))
                 }
                 .disabled(clientId.isEmpty)
 
-                step("3", "Depois de autorizar, copie o endereço da página que abrir (ou só o código) e cole aqui")
+                step("3", tr("Depois de autorizar, copie o endereço da página que abrir (ou só o código) e cole aqui", "After authorizing, copy the address of the page that opens (or just the code) and paste it here"))
                 TextField("https://httpbin.org/get?code=…", text: $code)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(connect)
@@ -243,7 +263,7 @@ struct SettingsView: View {
                 HStack {
                     Spacer()
                     if working { ProgressView().controlSize(.small) }
-                    Button("Conectar", action: connect)
+                    Button(tr("Conectar", "Connect"), action: connect)
                         .keyboardShortcut(.defaultAction)
                         .disabled(clientId.isEmpty || ac.draftClientSecret.isEmpty || code.isEmpty || working)
                 }
@@ -286,12 +306,12 @@ struct LaunchAtLoginToggle: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("Abrir ao iniciar o Mac", isOn: Binding(get: { enabled }, set: update))
+            Toggle(tr("Abrir ao iniciar o Mac", "Open at login"), isOn: Binding(get: { enabled }, set: update))
                 .toggleStyle(.switch)
                 .controlSize(.small)
                 .font(.caption)
             if needsApproval {
-                Button("Aprovar em Itens de Início") { LaunchAtLogin.openLoginItemsSettings() }
+                Button(tr("Aprovar em Itens de Início", "Approve in Login Items")) { LaunchAtLogin.openLoginItemsSettings() }
                     .buttonStyle(.link)
                     .font(.caption)
             }
@@ -309,7 +329,7 @@ struct LaunchAtLoginToggle: View {
             error = nil
         } catch {
             let code = (error as NSError).code
-            self.error = "Não foi possível alterar (código \(code)). O app precisa estar em /Applications."
+            self.error = tr("Não foi possível alterar (código \(code)). O app precisa estar em /Applications.", "Couldn't change it (code \(code)). The app must be in /Applications.")
         }
         sync()
     }

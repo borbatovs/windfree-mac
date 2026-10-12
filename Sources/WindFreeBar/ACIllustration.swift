@@ -83,7 +83,7 @@ struct ACIllustration: View {
         .onChange(of: power) { on in
             withAnimation(Self.transition) { onPhotoOpacity = on ? 1 : 0 }
         }
-        .accessibilityLabel(power ? "Ar-condicionado ligado" : "Ar-condicionado desligado")
+        .accessibilityLabel(power ? tr("Ar-condicionado ligado", "Air conditioner on") : tr("Ar-condicionado desligado", "Air conditioner off"))
     }
 
     @ViewBuilder

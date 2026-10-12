@@ -42,8 +42,8 @@ struct TemperatureDial: View {
         .animation(.easeOut(duration: 0.15), value: value)
         .animation(.easeOut(duration: 0.2), value: mode)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Temperatura")
-        .accessibilityValue("\(value) graus, modo \(Labels.mode(mode))")
+        .accessibilityLabel(tr("Temperatura", "Temperature"))
+        .accessibilityValue(tr("\(value) graus, modo \(Labels.mode(mode))", "\(value) degrees, \(Labels.mode(mode)) mode"))
         .accessibilityAdjustableAction { direction in
             switch direction {
             case .increment: onStep(1)
