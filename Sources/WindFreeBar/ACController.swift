@@ -156,7 +156,12 @@ final class ACController: ObservableObject {
     }
 
     func setMode(_ mode: String) {
-        send("airConditionerMode", "setAirConditionerMode", [mode]) { $0.mode = mode }
+        send("airConditionerMode", "setAirConditionerMode", [mode]) { s in
+            s.mode = mode
+            // Ao entrar no Quente o aparelho desliga o WindFree sozinho; mostra isso já, sem esperar a nuvem.
+            // (WindFree Sono ainda não foi testado: nesse caso espera a confirmação.)
+            if mode == "heat", s.optionalMode == "windFree" { s.optionalMode = "off" }
+        }
     }
 
     func setFan(_ fan: String) {

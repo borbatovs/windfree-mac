@@ -31,7 +31,8 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   - `custom.autoCleaningMode.setAutoCleaningMode` → on, off
   - `refresh.refresh` → pede ao aparelho para reportar o estado
 - WindFree (`windFree`/`windFreeSleep`) é recusado no modo `heat` (testado no aparelho em 12/10/2026); o cartão
-  fica desativado nesse modo. Nos demais modos ainda não foi testado um por um.
+  fica desativado nesse modo. Nos demais modos ainda não foi testado um por um. Trocar para `heat` com
+  WindFree ligado é aceito: o próprio aparelho abre a aleta e desliga o WindFree (não é preciso desligar antes).
 - Leituras disponíveis: `temperatureMeasurement`, `relativeHumidityMeasurement`, `powerConsumptionReport`
   (energia acumulada em Wh), `custom.dustFilter` (uso do filtro em horas).
 - Desativadas neste modelo (`custom.disabledCapabilities`): sensores de qualidade do ar/poeira/odor,
