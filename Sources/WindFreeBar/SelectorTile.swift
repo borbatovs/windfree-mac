@@ -16,7 +16,11 @@ struct SelectorTile: View {
     let value: String
     /// Destaca o ícone quando a função está ligada (ex.: Sono, WindFree).
     var active = false
+    /// Quando preenchido, o cartão fica desativado e o texto aparece ao passar o mouse.
+    var unavailableReason: String? = nil
     let options: () -> [Option]
+
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Button { OptionMenu.show(options()) } label: {
@@ -48,7 +52,9 @@ struct SelectorTile: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
         }
         .buttonStyle(.hover(cornerRadius: 10))
-        .help("\(title): \(value)")
+        .disabled(unavailableReason != nil)
+        .opacity(isEnabled && unavailableReason == nil ? 1 : 0.4)
+        .help(unavailableReason ?? "\(title): \(value)")
     }
 }
 

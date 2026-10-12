@@ -130,7 +130,9 @@ struct ControlPanel: View {
                          value: Labels.oscillation(st.oscillation)) {
                 st.supportedOscillation.map { o in .init(title: Labels.oscillation(o), selected: o == st.oscillation) { ac.setOscillation(o) } }
             }
-            SelectorTile(icon: "fan.slash", title: "WindFree", value: onOff[st.isWindFree ? 1 : 0], active: st.isWindFree) {
+            // O aparelho recusa WindFree no modo Quente (testado em 12/10/2026).
+            SelectorTile(icon: "fan.slash", title: "WindFree", value: onOff[st.isWindFree ? 1 : 0], active: st.isWindFree,
+                         unavailableReason: st.mode == "heat" ? "WindFree não funciona no modo Quente" : nil) {
                 [false, true].map { on in .init(title: onOff[on ? 1 : 0], selected: on == st.isWindFree) { ac.setWindFree(on) } }
             }
             .disabled(!st.supportedOptionalModes.contains("windFree"))
