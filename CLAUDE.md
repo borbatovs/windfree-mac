@@ -15,6 +15,10 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - O dono do projeto não é desenvolvedor Swift de carreira: explique passos de Terminal/VS Code de forma direta,
   um comando por vez quando houver risco de confusão.
 - Compilar e instalar: `./build.sh --install` (ou `Cmd+Shift+B` no VS Code). Só checar erros: `swift build`.
+- Versões: a versão (`CFBundleShortVersionString` em `Resources/Info.plist`, ex.: 0.2) é subida à mão quando o
+  dono decidir que há um marco, com uma tag `vX.Y` no commit. O `build.sh` grava no app instalado o build
+  (nº de commits) e o commit (`WindFreeCommit`; "+" = instalado com mudanças não commitadas). Aparece embaixo
+  de "Sair do WindFree" nas configurações (`AppVersion`); no `--preview` mostra "desenvolvimento".
 - Ver a interface sem instalar: `swift run WindFreeBar --preview` (tarefa "WindFree: pré-visualizar painel").
   Abre o painel numa janela em modo de demonstração (`ACController(demo: true)`): dados de exemplo, sem rede,
   sem Keychain, comandos só mudam a tela. Prefira isso para ajustes visuais; instale só quando o dono pedir.
@@ -114,6 +118,7 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `AppLanguage.swift` — idioma da interface e `tr(_:_:)`
 - `SymbolEffects.swift` — animações dos SF Symbols com verificação de versão
 - `AppAppearance.swift` — tema Sistema/Claro/Escuro (`NSApp.appearance`)
+- `AppVersion.swift` — texto da versão instalada (lido do Info.plist gravado pelo build.sh)
 - `AirFlowStrands.swift` — dados gerados dos 40 fios do fluxo de ar (não editar à mão; ver Figma abaixo)
 - `LaunchAtLogin.swift` — `SMAppService` (exige o app em /Applications)
 - `Preview.swift` — `--preview` (janela de pré-visualização) e `--snapshot` (capturas em PNG)

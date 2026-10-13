@@ -233,7 +233,13 @@ struct SettingsView: View {
                 LaunchAtLoginToggle()
                     .disabled(ac.isDemo)   // registraria o executável de desenvolvimento no login
             }
-            Button(tr("Sair do WindFree", "Quit WindFree")) { NSApp.terminate(nil) }
+            VStack(alignment: .leading, spacing: 8) {
+                Button(tr("Sair do WindFree", "Quit WindFree")) { NSApp.terminate(nil) }
+                Text(AppVersion.label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
         }
         .onAppear { if clientId.isEmpty { clientId = ac.savedClientId } }
     }
