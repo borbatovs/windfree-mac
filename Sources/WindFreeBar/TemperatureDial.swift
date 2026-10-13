@@ -121,6 +121,8 @@ struct TemperatureDial: View {
                 Image(systemName: Labels.modeIcon(mode))
                     .font(.system(size: 13))
                     .foregroundStyle(color)
+                    .symbolReplaceTransition()
+                    .modeSymbolEffect(mode, active: power)
             }
         }
         .frame(width: Self.knobSize, height: Self.knobSize)

@@ -88,6 +88,7 @@ struct ControlPanel: View {
         return Button { ac.setPower(!on) } label: {
             Image(systemName: "power")
                 .font(.system(size: 16, weight: .semibold))
+                .symbolBounce(on: on)
                 .foregroundStyle(on ? Color(nsColor: .windowBackgroundColor) : Color.secondary)
                 .frame(width: 40, height: 40)
                 // Ligado: cheio na cor do texto (branco no escuro, preto no claro), neutro e com contraste máximo.
@@ -146,7 +147,8 @@ struct ControlPanel: View {
         let st = ac.state
         let notAvailable = tr("Não disponível neste aparelho", "Not available on this unit")
         return HStack(spacing: 8) {
-            SelectorTile(icon: "fan", title: tr("Velocidade", "Fan speed"), value: Labels.fan(st.fanMode)) {
+            SelectorTile(icon: "fan", title: tr("Velocidade", "Fan speed"), value: Labels.fan(st.fanMode),
+                         iconEffect: .spin(speed: FanSpin.speed(st.fanMode)), iconEffectActive: st.power) {
                 st.supportedFanModes.map { fan in .init(title: Labels.fan(fan), selected: fan == st.fanMode) { ac.setFan(fan) } }
             }
             SelectorTile(icon: "moon.zzz", title: tr("Sono", "Sleep"), value: Labels.onOff(st.isSleep), active: st.isSleep,

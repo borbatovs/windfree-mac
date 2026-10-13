@@ -18,6 +18,14 @@ struct SelectorTile: View {
     var active = false
     /// Quando preenchido, o cartão fica desativado e o texto aparece ao passar o mouse.
     var unavailableReason: String? = nil
+    /// Animação do ícone (macOS 14/15+; estático antes) e quando ela roda.
+    var iconEffect: IconEffect = .none
+    var iconEffectActive = false
+
+    enum IconEffect {
+        case none
+        case spin(speed: Double)
+    }
     let options: () -> [Option]
 
     var body: some View {
@@ -27,6 +35,7 @@ struct SelectorTile: View {
                     Image(systemName: icon)
                         .font(.system(size: iconSize, weight: .regular))
                         .foregroundStyle(active ? Color.accentColor : Color.primary)
+                        .iconEffect(iconEffect, active: iconEffectActive)
                         .frame(height: 22)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.down")
@@ -54,6 +63,16 @@ struct SelectorTile: View {
         // Apaga só quando a função não está disponível; com o ar desligado o painel já apaga todos os controles.
         .opacity(unavailableReason == nil ? 1 : 0.4)
         .help(unavailableReason ?? "\(title): \(value)")
+    }
+}
+
+private extension View {
+    @ViewBuilder func iconEffect(_ effect: SelectorTile.IconEffect, active: Bool) -> some View {
+        switch effect {
+        case .none: self
+        // O efeito em andamento não adota a velocidade nova; o `.id` recria o ícone e reinicia o giro.
+        case .spin(let speed): symbolSpinning(active, speed: speed).id(speed)
+        }
     }
 }
 

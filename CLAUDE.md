@@ -111,6 +111,7 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `ModeGlow.swift` — gradiente de fundo na cor do modo
 - `HoverButtonStyle.swift` — hover/clique dos botões personalizados
 - `AppLanguage.swift` — idioma da interface e `tr(_:_:)`
+- `SymbolEffects.swift` — animações dos SF Symbols com verificação de versão
 - `AppAppearance.swift` — tema Sistema/Claro/Escuro (`NSApp.appearance`)
 - `AirFlowStrands.swift` — dados gerados dos 40 fios do fluxo de ar (não editar à mão; ver Figma abaixo)
 - `LaunchAtLogin.swift` — `SMAppService` (exige o app em /Applications)
@@ -150,6 +151,11 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Botão de energia: ligado cheio na cor do texto (branco no escuro, preto no claro); o dono não quer o azul do
   sistema nele. Desligado discreto, mas não pode parecer desativado quando ligado.
 - Botões personalizados têm hover (`HoverButtonStyle`); controles nativos seguem o padrão do macOS.
+- Animações de SF Symbols (`SymbolEffects.swift`, com `#available`: macOS 14/15+, estáticas antes): pás do
+  ícone de Velocidade giram com o ar ligado (0,5× baixa … 2,6× turbo; `.id(speed)` reinicia o giro, senão a
+  velocidade nova não pega); bounce no botão de energia; troca animada do ícone do modo no dimmer, que com o ar
+  ligado gira devagar no Auto e "respira" só no tamanho (`.breathe.plain`) nos demais. O dono não quer efeitos
+  que piscam ou variam opacidade (variable color, breathe padrão) — o Sono ficou sem animação.
 - Para regerar `AirFlowStrands.swift`: `get_design_context` no nó 9:11825 dá caixa e SVG de cada fio (curva
   cúbica `M…C`; somar o deslocamento `inset` esquerdo/superior da caixa) e `get_motion_context` dá fase
   (`stroke-dashoffset`/`dasharray` em t = 0) e opacidade máxima.
