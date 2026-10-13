@@ -6,44 +6,17 @@ struct ControlPanel: View {
     /// Ao trocar o idioma o painel é reconstruído (`.id`), para todos os textos `tr(...)` mudarem na hora.
     @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.pt
 
+    @AppStorage(AppLayout.storageKey) private var layout = AppLayout.vertical
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            header
-            if !ac.showSettings {
-                ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode,
-                               width: 288 * 0.9)
-                    .frame(maxWidth: .infinity)
-            }
-
-            if ac.showSettings {
-                Divider()
-                SettingsView()
-            } else {
-                controls
-                    .opacity(ac.state.power ? 1 : 0.55)
-                    .overlay {
-                        // Só explica ao passar o mouse; os cliques já estão bloqueados pelo .disabled.
-                        if !ac.state.power {
-                            Color.clear.contentShape(Rectangle()).help(tr("Ligue o ar para alterar", "Turn the AC on to change this"))
-                        }
-                    }
-            }
-
-            if let error = ac.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if !ac.showSettings {
-                Divider()
-                footer
+        Group {
+            // O app instalado usa só o horizontal; a escolha existe apenas na pré-visualização.
+            switch ac.isDemo ? layout : .horizontal {
+            case .vertical: verticalLayout
+            case .horizontal: horizontalLayout
             }
         }
         .id(language)
-        .padding(16)
-        .frame(width: 320)
         .background {
             let st = ac.state
             let range = st.setpointMin...max(st.setpointMin, st.setpointMax)
@@ -54,43 +27,163 @@ struct ControlPanel: View {
                          ? Double(max(0, min(3, range.lowerBound + 3 - st.setpoint))) / 3 : 0)
             }
         }
-        // Preso no topo: quando a janela salta para o tamanho final antes da animação de altura terminar,
-        // o conteúdo não fica centralizado (o que fazia a foto deslizar).
-        .frame(maxHeight: .infinity, alignment: .top)
         .task { await ac.refresh(askDevice: true) }
+    }
+
+    // MARK: Layouts
+
+    /// Uma coluna: cabeçalho, ilustração, controles e rodapé com a engrenagem.
+    private var verticalLayout: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            header()
+            if !ac.showSettings {
+                illustration
+            }
+            if ac.showSettings {
+                Divider()
+                SettingsView()
+            } else {
+                controlsArea
+            }
+            errorText
+            if !ac.showSettings {
+                Divider()
+                footer
+            }
+        }
+        .padding(16)
+        .frame(width: 320)
+    }
+
+    private static let columnWidth: CGFloat = 300
+
+    /// Duas colunas: à esquerda cabeçalho e ilustração; à direita dimmer, modos e seletores (ou as
+    /// configurações), com a engrenagem no canto.
+    private var horizontalLayout: some View {
+        HStack(alignment: .top, spacing: 32) {
+            VStack(alignment: .leading, spacing: 20) {
+                header(roomInfo: false, backButton: false)
+                illustration
+                Spacer(minLength: 0)
+                // Temperatura e umidade no pé da coluna, um pouco maiores que no cabeçalho do vertical.
+                detailedRoomInfo
+            }
+            .frame(width: Self.columnWidth)
+            .frame(maxHeight: .infinity)
+
+            VStack(alignment: .leading, spacing: 20) {
+                if ac.showSettings {
+                    settingsBackButton
+                    SettingsView()
+                } else {
+                    controlsArea
+                }
+                errorText
+            }
+            .frame(width: Self.columnWidth)
+            .overlay(alignment: .topTrailing) {
+                if !ac.showSettings { cornerSettingsButton }
+            }
+        }
+        // As duas colunas ficam com a altura da mais alta (a esquerda estica até o pé da direita).
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(24)
+    }
+
+    private var illustration: some View {
+        ACIllustration(power: ac.state.power, mode: ac.state.mode, fanMode: ac.state.fanMode, width: 288 * 0.9)
+            .frame(maxWidth: .infinity)
+    }
+
+    private var controlsArea: some View {
+        controls
+            .opacity(ac.state.power ? 1 : 0.55)
+            .overlay {
+                // Só explica ao passar o mouse; os cliques já estão bloqueados pelo .disabled.
+                if !ac.state.power {
+                    Color.clear.contentShape(Rectangle()).help(tr("Ligue o ar para alterar", "Turn the AC on to change this"))
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var errorText: some View {
+        if let error = ac.errorMessage {
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(.red)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: Cabeçalho
 
-    private var header: some View {
+    /// - Parameter roomInfo: mostra temperatura ambiente e umidade abaixo do nome (no horizontal elas ficam
+    ///   no pé da coluna esquerda).
+    /// - Parameter backButton: seta de voltar à esquerda do nome nas configurações (vertical); no horizontal
+    ///   ela fica no topo da coluna direita.
+    private func header(roomInfo: Bool = true, backButton: Bool = true) -> some View {
         HStack(alignment: .center, spacing: 6) {
-            if ac.showSettings && ac.isConnected {
-                // Sem conexão não há para onde voltar: o painel ficaria vazio.
-                Button { ac.showSettings = false } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 26, height: 26)
-                }
-                .buttonStyle(.hover(cornerRadius: 6))
-                .help(tr("Voltar", "Back"))
-                .keyboardShortcut(.cancelAction)
-                .padding(.leading, -6)   // alinha o ícone com a margem, já que o hover tem folga
-            }
+            if backButton { settingsBackButton }
             VStack(alignment: .leading, spacing: 2) {
                 Text(ac.deviceLabel).font(.headline)
-                HStack(spacing: 10) {
-                    if let t = ac.state.roomTemperature {
-                        Label(tr("\(Int(t))° no ambiente", "\(Int(t))° in the room"), systemImage: "thermometer.medium")
-                    }
-                    if let h = ac.state.humidity {
-                        Label("\(Int(h))%", systemImage: "humidity")
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                if roomInfo { compactRoomInfo }
             }
             Spacer()
             powerButton
+        }
+    }
+
+    /// Linha curta sob o nome (vertical): "23° no ambiente  55%".
+    private var compactRoomInfo: some View {
+        HStack(spacing: 10) {
+            if let t = ac.state.roomTemperature {
+                Label(tr("\(Int(t))° no ambiente", "\(Int(t))° in the room"), systemImage: "thermometer.medium")
+            }
+            if let h = ac.state.humidity {
+                Label("\(Int(h))%", systemImage: "humidity")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    /// Uma informação por linha, com rótulo (pé da coluna esquerda no horizontal).
+    private var detailedRoomInfo: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let t = ac.state.roomTemperature {
+                infoRow("thermometer.medium", tr("Temperatura ambiente: \(Int(t))°", "Room temperature: \(Int(t))°"))
+            }
+            if let h = ac.state.humidity {
+                infoRow("humidity", tr("Umidade do ar: \(Int(h))%", "Humidity: \(Int(h))%"))
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+    }
+
+    /// Seta para sair das configurações. Sem conexão não há para onde voltar (o painel ficaria vazio).
+    @ViewBuilder
+    private var settingsBackButton: some View {
+        if ac.showSettings && ac.isConnected {
+            Button { ac.showSettings = false } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.hover(cornerRadius: 6))
+            .help(tr("Voltar", "Back"))
+            .keyboardShortcut(.cancelAction)
+            .padding(.leading, -6)   // alinha o ícone com a margem, já que o hover tem folga
+        }
+    }
+
+    /// Ícone numa largura fixa, para os textos começarem alinhados.
+    private func infoRow(_ symbol: String, _ text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: symbol).frame(width: 18)
+            Text(text)
         }
     }
 
@@ -195,6 +288,17 @@ struct ControlPanel: View {
     private func footerIcon(_ symbol: String) -> some View {
         Image(systemName: symbol).frame(width: 26, height: 26)
     }
+
+    /// Engrenagem no canto superior direito (layout horizontal).
+    private var cornerSettingsButton: some View {
+        HStack(spacing: 6) {
+            if ac.isBusy { ProgressView().controlSize(.small) }
+            Button { ac.showSettings = true } label: { footerIcon("gearshape") }
+                .buttonStyle(.hover(cornerRadius: 6))
+                .help(tr("Configurações", "Settings"))
+        }
+        .padding(.trailing, -6)   // alinha o ícone com a margem, já que o hover tem folga
+    }
 }
 
 struct SettingsView: View {
@@ -207,6 +311,7 @@ struct SettingsView: View {
     @State private var working = false
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     @AppStorage(AppLanguage.storageKey) private var language = AppLanguage.pt
+    @AppStorage(AppLayout.storageKey) private var layout = AppLayout.vertical
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -222,6 +327,17 @@ struct SettingsView: View {
             }
             .onChange(of: appearance) { $0.apply() }
             Divider()
+            if ac.isDemo {   // só na pré-visualização, para comparar os layouts
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionTitle(tr("Visualização", "Layout"))
+                    Picker("", selection: $layout) {
+                        ForEach(AppLayout.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+                Divider()
+            }
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle(tr("Idioma", "Language"))
                 Picker("", selection: $language) {

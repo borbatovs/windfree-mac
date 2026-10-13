@@ -28,7 +28,7 @@ final class PreviewAppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// `swift run WindFreeBar --snapshot <pasta>`: salva PNGs do painel em alguns estados (temas escuro e claro;
-/// os casos com prefixo `en-` saem em inglês).
+/// os casos com prefixo `en-` saem em inglês e os com `h-` no layout horizontal).
 @MainActor
 enum Snapshots {
     static func render(to directory: String) {
@@ -50,17 +50,26 @@ enum Snapshots {
             ("claro-configuracoes", false, { $0.showSettings = true }),
             ("en-ligado-frio", true, { _ in }),
             ("en-configuracoes", true, { $0.showSettings = true }),
+            ("h-ligado-frio", true, { _ in }),
+            ("h-desligado", true, { $0.state.power = false }),
+            ("h-configuracoes", true, { $0.showSettings = true }),
         ]
         // O idioma vem das preferências; guarda o da pré-visualização para restaurar no fim.
         let defaults = UserDefaults.standard
         let savedLanguage = defaults.string(forKey: AppLanguage.storageKey)
-        defer { defaults.set(savedLanguage, forKey: AppLanguage.storageKey) }
+        let savedLayout = defaults.string(forKey: AppLayout.storageKey)
+        defer {
+            defaults.set(savedLanguage, forKey: AppLanguage.storageKey)
+            defaults.set(savedLayout, forKey: AppLayout.storageKey)
+        }
         let folder = URL(fileURLWithPath: directory)
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 
         for item in cases {
             defaults.set(item.name.hasPrefix("en-") ? AppLanguage.en.rawValue : AppLanguage.pt.rawValue,
                          forKey: AppLanguage.storageKey)
+            defaults.set(item.name.hasPrefix("h-") ? AppLayout.horizontal.rawValue : AppLayout.vertical.rawValue,
+                         forKey: AppLayout.storageKey)
             let ac = ACController(demo: true)
             item.setup(ac)
             let view = NSHostingView(rootView: ControlPanel()

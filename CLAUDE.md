@@ -105,10 +105,15 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `SmartThingsClient.swift` — HTTP: listar dispositivos, status, comandos
 - `AuthManager.swift` — fluxo OAuth e renovação
 - `ACController.swift` — estado observável, polling de 60 s, atualização otimista, `pending`, modo demonstração
-- `ControlPanel.swift` — painel: cabeçalho (nome, ambiente, botão de energia), ilustração, dimmer, botões de modo
-  (só ícone), 4 seletores (Velocidade, Sono, Direção, WindFree), rodapé com engrenagem; configurações em seções
-  (Conexão com "Atualizar agora"/"Desconectar", Aparência, Idioma, Inicialização, "Sair do WindFree") e botão de voltar
-  com ícone no rodapé. Modo especial e Auto limpeza foram retirados da tela (o código de envio continua).
+- `ControlPanel.swift` — painel em **layout horizontal** (o do app instalado): coluna esquerda com nome e botão
+  de energia, ilustração e, no pé, "Temperatura ambiente"/"Umidade do ar"; coluna direita com dimmer, botões de
+  modo (só ícone) e 4 seletores (Velocidade, Sono, Direção, WindFree), engrenagem no canto superior direito. As
+  configurações ocupam a coluna direita, com a seta de voltar no topo à esquerda: Conexão ("Atualizar agora"/
+  "Desconectar"), Aparência, Idioma, Inicialização, "Sair do WindFree" e a versão. O layout vertical (uma coluna)
+  continua no código e só pode ser escolhido na pré-visualização (Configurações › Visualização), para comparar.
+  As duas colunas têm a mesma altura (`.fixedSize(vertical:)`); a janela abraça o conteúdo. Modo especial e
+  Auto limpeza foram retirados da tela (o código de envio continua).
+- `AppLayout.swift` — vertical/horizontal (escolha só na pré-visualização)
 - `ACIllustration.swift` — foto do aparelho e fluxo de ar animado no topo do painel
 - `TemperatureDial.swift` — dimmer de temperatura e `ModeColor` (cor de cada modo)
 - `SelectorTile.swift` — cartão de seleção com menu nativo (`OptionMenu`)

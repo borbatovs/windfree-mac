@@ -10,6 +10,8 @@ enum Launcher {
         if let i = args.firstIndex(of: "--snapshot") {
             Snapshots.render(to: i + 1 < args.count ? args[i + 1] : "snapshots")
         } else if args.contains("--preview") {
+            // A pré-visualização começa no layout horizontal; o app instalado, no vertical.
+            UserDefaults.standard.register(defaults: [AppLayout.storageKey: AppLayout.horizontal.rawValue])
             PreviewApp.main()
         } else {
             WindFreeBarApp.main()
