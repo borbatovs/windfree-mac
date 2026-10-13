@@ -140,8 +140,11 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
   Cor dos fios segue o modo (`ModeColor`): 5 variações da cor do modo; Quente usa laranjas escolhidos por nós.
   Os azuis originais do Figma foram trocados pelo azul-gelo do Frio.
 - Ligar/desligar: a foto desligada fica sempre por baixo e a ligada só muda de opacidade (ease-in-out 0,4 s),
-  então só a aleta parece abrir; o fluxo entra 0,25 s depois. A altura muda na hora. Desligado há 16 pt a mais
-  abaixo da foto.
+  então só a aleta parece abrir; o fluxo entra 0,25 s depois. A área da ilustração tem **altura fixa** (a de
+  ligado, menos 20 pt de `bottomTrim`): a janela não muda de tamanho ao ligar/desligar. O dono testou animar a
+  altura (inclusive quadro a quadro, para a janela crescer junto) e preferiu altura fixa. O painel fica preso
+  no topo da janela (`.frame(maxHeight: .infinity, alignment: .top)` no `ControlPanel`), porque a altura ainda
+  muda ao abrir as configurações.
 
 ## Visual
 

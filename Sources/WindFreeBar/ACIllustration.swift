@@ -44,8 +44,9 @@ struct ACIllustration: View {
     private static let airFlowSize = CGSize(width: 980, height: 682)
 
     private static let transition = Animation.easeInOut(duration: 0.4)
-    /// Respiro extra abaixo da foto quando desligado (sem o fluxo de ar, o dimmer ficava colado).
-    private static let offBottomSpace: CGFloat = 16
+    /// Quanto tirar da altura fixa: a ponta de baixo do fluxo de ar já é transparente, então o dimmer pode
+    /// chegar mais perto (o fluxo é desenhado por cima dessa folga).
+    private static let bottomTrim: CGFloat = 20
     /// Opacidade da foto ligada, animada à parte. Um `.animation(value: power)` animaria também a
     /// posição da foto quando o painel muda de altura, e ela "deslizaria".
     @State private var onPhotoOpacity: Double?
@@ -74,11 +75,9 @@ struct ACIllustration: View {
                         removal: .opacity.animation(.easeInOut(duration: 0.25))))
             }
         }
-        // A altura muda na hora, sem animação: a janela do painel salta para o tamanho final e, se a
-        // altura fosse animada, o conteúdo deslizaria dentro dela (a foto "entrava" e "saía").
-        .frame(width: width,
-               height: power ? (Self.airFlowY + Self.airFlowSize.height) * s : 337 * s + Self.offBottomSpace,
-               alignment: .topLeading)
+        // Altura fixa (a de ligado) mesmo desligado: a janela do painel não muda de tamanho ao ligar/desligar
+        // e nada salta; desligado, o espaço do fluxo de ar fica vazio entre o aparelho e o dimmer.
+        .frame(width: width, height: (Self.airFlowY + Self.airFlowSize.height) * s - Self.bottomTrim, alignment: .topLeading)
         .onAppear { onPhotoOpacity = power ? 1 : 0 }
         .onChange(of: power) { on in
             withAnimation(Self.transition) { onPhotoOpacity = on ? 1 : 0 }

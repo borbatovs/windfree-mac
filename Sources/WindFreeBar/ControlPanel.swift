@@ -54,6 +54,9 @@ struct ControlPanel: View {
                          ? Double(max(0, min(3, range.lowerBound + 3 - st.setpoint))) / 3 : 0)
             }
         }
+        // Preso no topo: quando a janela salta para o tamanho final antes da animação de altura terminar,
+        // o conteúdo não fica centralizado (o que fazia a foto deslizar).
+        .frame(maxHeight: .infinity, alignment: .top)
         .task { await ac.refresh(askDevice: true) }
     }
 
