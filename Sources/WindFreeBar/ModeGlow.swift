@@ -11,6 +11,8 @@ struct ModeGlow: View {
     /// Intensidade exibida, animada à parte (como a foto ligada): um `.animation(value:)` aqui animaria
     /// também o tamanho do fundo quando o painel muda de altura.
     @State private var shown: Double?
+    @State private var hotShown: Double?
+    @State private var coldShown: Double?
 
     private static let minOpacity = 0.08
     private static let maxOpacity = 0.45
@@ -38,6 +40,36 @@ struct ModeGlow: View {
         })
     }
 
+    /// Temperatura extrema: camada extra no topo nos 3 graus das pontas, mais forte a cada grau (25/50/75%).
+    /// Quente 28–30°: vermelho. Frio 18–16°: azul mais profundo. Camadas separadas para uma não "piscar" na
+    /// cor da outra ao trocar de modo.
+    private var hotTarget: Double {
+        guard power, mode == "heat" else { return 0 }
+        return Self.extremeOpacity(steps: setpoint - (range.upperBound - 3))
+    }
+    private var coldTarget: Double {
+        guard power, mode == "cool" else { return 0 }
+        return Self.extremeOpacity(steps: (range.lowerBound + 3) - setpoint)
+    }
+    private static func extremeOpacity(steps: Int) -> Double {
+        steps > 0 ? Double(min(steps, 3)) / 3 * 0.75 : 0
+    }
+    private static func extremeColor(_ mode: String) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            return NSColor(hex: ModeColor.extremeHex(mode, dark: dark) ?? "#000000")
+        })
+    }
+
+    private func extremeLayer(_ color: Color, opacity: Double) -> some View {
+        LinearGradient(stops: [
+            .init(color: color, location: 0),
+            .init(color: color.opacity(0.4), location: 0.18),
+            .init(color: color.opacity(0), location: 0.35),
+        ], startPoint: .top, endPoint: .bottom)
+        .opacity(opacity)
+    }
+
     var body: some View {
         let color = color
         LinearGradient(stops: [
@@ -46,8 +78,16 @@ struct ModeGlow: View {
             .init(color: color.opacity(0), location: 1),
         ], startPoint: .top, endPoint: .bottom)
         .opacity(shown ?? target)
+        .overlay { extremeLayer(Self.extremeColor("heat"), opacity: hotShown ?? hotTarget) }
+        .overlay { extremeLayer(Self.extremeColor("cool"), opacity: coldShown ?? coldTarget) }
         .allowsHitTesting(false)
-        .onAppear { shown = target }
+        .onAppear { shown = target; hotShown = hotTarget; coldShown = coldTarget }
+        .onChange(of: hotTarget) { value in
+            withAnimation(.easeInOut(duration: 0.5)) { hotShown = value }
+        }
+        .onChange(of: coldTarget) { value in
+            withAnimation(.easeInOut(duration: 0.5)) { coldShown = value }
+        }
         .onChange(of: target) { value in
             withAnimation(.easeInOut(duration: 0.5)) { shown = value }
         }

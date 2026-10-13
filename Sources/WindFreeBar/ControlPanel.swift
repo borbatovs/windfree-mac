@@ -44,8 +44,16 @@ struct ControlPanel: View {
         .id(language)
         .padding(16)
         .frame(width: 320)
-        .background(ModeGlow(power: ac.state.power, mode: ac.state.mode, setpoint: ac.state.setpoint,
-                             range: ac.state.setpointMin...max(ac.state.setpointMin, ac.state.setpointMax)))
+        .background {
+            let st = ac.state
+            let range = st.setpointMin...max(st.setpointMin, st.setpointMax)
+            ZStack {
+                ModeGlow(power: st.power, mode: st.mode, setpoint: st.setpoint, range: range)
+                // Frio extremo: neve nos 3 graus mais baixos (16–18°), mais intensa no mínimo.
+                Snowfall(amount: st.power && st.mode == "cool"
+                         ? Double(max(0, min(3, range.lowerBound + 3 - st.setpoint))) / 3 : 0)
+            }
+        }
         .task { await ac.refresh(askDevice: true) }
     }
 

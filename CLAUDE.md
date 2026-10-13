@@ -108,7 +108,8 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - `ACIllustration.swift` — foto do aparelho e fluxo de ar animado no topo do painel
 - `TemperatureDial.swift` — dimmer de temperatura e `ModeColor` (cor de cada modo)
 - `SelectorTile.swift` — cartão de seleção com menu nativo (`OptionMenu`)
-- `ModeGlow.swift` — gradiente de fundo na cor do modo
+- `ModeGlow.swift` — gradiente de fundo na cor do modo e camadas de temperatura extrema
+- `Snowfall.swift` — neve caindo no Frio extremo
 - `HoverButtonStyle.swift` — hover/clique dos botões personalizados
 - `AppLanguage.swift` — idioma da interface e `tr(_:_:)`
 - `SymbolEffects.swift` — animações dos SF Symbols com verificação de versão
@@ -145,6 +146,12 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Fundo (`ModeGlow`): gradiente do topo até ~metade, opacidade 8–45%. Frio mais intenso quanto mais baixa a
   temperatura, Quente quanto mais alta, demais modos no meio-termo; desligado, sem cor. No fundo o Frio usa um
   azul mais saturado (`#3FAEF5`), porque o gelo virava cinza.
+- Temperaturas extremas (3 graus das pontas, 1/3 por grau; cores em `ModeColor.extremeHex`):
+  - Frio 18→16°: camada azul vivo `#14A0FF` (claro `#0A8FE8`) no topo do fundo (25/50/75%) e neve caindo
+    (`Snowfall`, até 40 flocos sutis com balanço lateral). O dimmer do Frio fica no azul-gelo — o dono testou o
+    azul vivo nele e não gostou (no frio extremo só um pedacinho do arco aparece).
+  - Quente 28→30°: camada vermelha `#E5392F` no topo do fundo (25/50/75%) e o dimmer inteiro puxando do
+    laranja para o vermelho (`ModeColor.dial`).
 - Dimmer: arco de 240° com abertura embaixo, marcações a cada meio grau, sem números; sempre mostra um pedacinho
   do arco no mínimo. Rolagem para cima sobe (1 grau por clique da roda, ~12 pt no trackpad, inércia ignorada) e
   arraste vertical (8 pt por grau).

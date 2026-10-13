@@ -27,7 +27,7 @@ struct TemperatureDial: View {
         return min(max(f, 0), 1)
     }
 
-    private var color: Color { power ? ModeColor.of(mode) : Color.secondary }
+    private var color: Color { power ? ModeColor.dial(mode, setpoint: value, range: range) : Color.secondary }
     private var valueAngle: Angle { .degrees(Self.startAngle + Self.sweep * fraction) }
 
     var body: some View {
@@ -148,6 +148,38 @@ enum ModeColor {
         Color(nsColor: NSColor(name: nil) { appearance in
             let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             return NSColor(hex: hex(mode, dark: dark))
+        })
+    }
+
+    /// Cor extrema (mesmas do fundo): Frio azul vivo, Quente vermelho.
+    static func extremeHex(_ mode: String, dark: Bool) -> String? {
+        switch mode {
+        case "cool": return dark ? "#14A0FF" : "#0A8FE8"
+        case "heat": return "#E5392F"
+        default: return nil
+        }
+    }
+
+    /// Quanto da cor extrema usar (0…1): nos 3 graus das pontas, 1/3 por grau — Frio 18→16°, Quente 28→30°.
+    static func extremeAmount(_ mode: String, setpoint: Int, range: ClosedRange<Int>) -> Double {
+        let steps: Int
+        switch mode {
+        case "cool": steps = (range.lowerBound + 3) - setpoint
+        case "heat": steps = setpoint - (range.upperBound - 3)
+        default: return 0
+        }
+        return Double(min(max(steps, 0), 3)) / 3
+    }
+
+    /// Cor do dimmer: a do modo; no Quente puxa para o vermelho nos 3 graus mais altos. O Frio fica no
+    /// azul-gelo (no frio extremo só um pedacinho do arco aparece, e o azul vivo não fez efeito).
+    static func dial(_ mode: String, setpoint: Int, range: ClosedRange<Int>) -> Color {
+        let amount = mode == "heat" ? extremeAmount(mode, setpoint: setpoint, range: range) : 0
+        return Color(nsColor: NSColor(name: nil) { appearance in
+            let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let base = NSColor(hex: hex(mode, dark: dark))
+            guard amount > 0, let extreme = extremeHex(mode, dark: dark) else { return base }
+            return base.blended(withFraction: amount, of: NSColor(hex: extreme)) ?? base
         })
     }
 }
