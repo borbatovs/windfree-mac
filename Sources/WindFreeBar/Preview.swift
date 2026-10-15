@@ -52,6 +52,8 @@ enum Snapshots {
             ("en-configuracoes", true, { $0.showSettings = true }),
             ("h-ligado-frio", true, { _ in }),
             ("h-desligado", true, { $0.state.power = false }),
+            ("h-frio-16", true, { $0.state.setpoint = 16 }),
+            ("h-quente-30", true, { $0.state.mode = "heat"; $0.state.setpoint = 30 }),
             ("h-configuracoes", true, { $0.showSettings = true }),
         ]
         // O idioma vem das preferências; guarda o da pré-visualização para restaurar no fim.

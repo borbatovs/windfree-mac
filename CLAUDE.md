@@ -156,14 +156,16 @@ um ar-condicionado Samsung WindFree pela API REST pública da SmartThings. Proje
 - Cores dos modos (`ModeColor`, mudam com o tema): Frio azul-gelo `#8CD6F5` (claro: `#1E96CC`), Quente
   `#FA8C2B`, Seco `#2EC4B6`, Ventilar branco `#FFFFFF` (claro: `#3A3A3C`), Auto `#8E7CF0`. Usadas no dimmer, no
   botão do modo selecionado, nos fios de ar e no fundo.
-- Fundo (`ModeGlow`): gradiente do topo até ~metade, opacidade 8–45%. Frio mais intenso quanto mais baixa a
+- Fundo (`ModeGlow`): brilho elíptico (`EllipticalGradient`) a partir do centro do painel até as bordas, queda
+  em smoothstep com 13 paradas (o dono achou o gradiente linear pouco suave), opacidade 8–45% no centro. Frio mais intenso quanto mais baixa a
   temperatura, Quente quanto mais alta, demais modos no meio-termo; desligado, sem cor. No fundo o Frio usa um
   azul mais saturado (`#3FAEF5`), porque o gelo virava cinza.
 - Temperaturas extremas (3 graus das pontas, 1/3 por grau; cores em `ModeColor.extremeHex`):
-  - Frio 18→16°: camada azul vivo `#14A0FF` (claro `#0A8FE8`) no topo do fundo (25/50/75%) e neve caindo
+  - Frio 18→16°: camada azul vivo `#14A0FF` (claro `#0A8FE8`), brilho radial concentrado no centro (até 60% do
+    raio; 25/50/75%) e neve caindo
     (`Snowfall`, até 40 flocos sutis com balanço lateral). O dimmer do Frio fica no azul-gelo — o dono testou o
     azul vivo nele e não gostou (no frio extremo só um pedacinho do arco aparece).
-  - Quente 28→30°: camada vermelha `#E5392F` no topo do fundo (25/50/75%) e o dimmer inteiro puxando do
+  - Quente 28→30°: camada vermelha `#E5392F`, brilho radial concentrado no centro (25/50/75%), e o dimmer inteiro puxando do
     laranja para o vermelho (`ModeColor.dial`).
 - Dimmer: arco de 240° com abertura embaixo, marcações a cada meio grau, sem números; sempre mostra um pedacinho
   do arco no mínimo. Rolagem para cima sobe (1 grau por clique da roda, ~12 pt no trackpad, inércia ignorada) e

@@ -40,7 +40,7 @@ struct ModeGlow: View {
         })
     }
 
-    /// Temperatura extrema: camada extra no topo nos 3 graus das pontas, mais forte a cada grau (25/50/75%).
+    /// Temperatura extrema: camada extra mais concentrada no centro nos 3 graus das pontas, mais forte a cada grau (25/50/75%).
     /// Quente 28–30°: vermelho. Frio 18–16°: azul mais profundo. Camadas separadas para uma não "piscar" na
     /// cor da outra ao trocar de modo.
     private var hotTarget: Double {
@@ -61,22 +61,24 @@ struct ModeGlow: View {
         })
     }
 
+    /// Brilho elíptico a partir do centro do painel, sumindo em direção às bordas. A queda segue uma curva
+    /// suave (smoothstep) com várias paradas, para não formar faixas visíveis.
+    private static func glow(_ color: Color, reach: Double) -> some View {
+        let steps = 12
+        let stops = (0...steps).map { i -> Gradient.Stop in
+            let t = Double(i) / Double(steps)
+            let falloff = 1 - t * t * (3 - 2 * t)   // 1 no centro → 0 na borda, sem quinas
+            return .init(color: color.opacity(falloff), location: t * reach)
+        }
+        return EllipticalGradient(stops: stops, center: .center, startRadiusFraction: 0, endRadiusFraction: 1)
+    }
+
     private func extremeLayer(_ color: Color, opacity: Double) -> some View {
-        LinearGradient(stops: [
-            .init(color: color, location: 0),
-            .init(color: color.opacity(0.4), location: 0.18),
-            .init(color: color.opacity(0), location: 0.35),
-        ], startPoint: .top, endPoint: .bottom)
-        .opacity(opacity)
+        Self.glow(color, reach: 0.6).opacity(opacity)
     }
 
     var body: some View {
-        let color = color
-        LinearGradient(stops: [
-            .init(color: color, location: 0),
-            .init(color: color.opacity(0.35), location: 0.45),
-            .init(color: color.opacity(0), location: 1),
-        ], startPoint: .top, endPoint: .bottom)
+        Self.glow(color, reach: 1)
         .opacity(shown ?? target)
         .overlay { extremeLayer(Self.extremeColor("heat"), opacity: hotShown ?? hotTarget) }
         .overlay { extremeLayer(Self.extremeColor("cool"), opacity: coldShown ?? coldTarget) }
